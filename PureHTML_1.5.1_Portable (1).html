@@ -1,0 +1,2163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f1114">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="PureHTML: editor offline-first para criar projetos em um único arquivo HTML puro.">
+  <meta name="application-name" content="PureHTML">
+  <meta name="author" content="Joe Souza">
+  <meta name="creator" content="Joe Souza">
+  <meta name="copyright" content="Copyright © 2026 AstarothX">
+  <title>PureHTML 1.5.1</title>
+
+<style>
+:root{
+  --bg:#0f1114;--panel:#15191e;--panel-2:#1b2027;--panel-3:#111418;--line:#2a313a;
+  --text:#e8edf2;--muted:#98a3ad;--accent:#6aa6ff;--accent-2:#275b9c;--warn:#f0c36a;
+  --danger:#ff7b7b;--success:#8dd3a8;--gutter:#101318;--shadow:0 16px 36px #0009;
+  --mono:Consolas,"Cascadia Mono","Courier New",monospace;--editor-font-size:14px;--split:50%;--console-height:165px
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Segoe UI,Arial,sans-serif;overflow:hidden}
+button,input,select,textarea{font:inherit}
+button,select,input{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:6px}
+button{padding:6px 10px;cursor:pointer}
+button:hover,select:hover,input:focus{border-color:#53606f;background:#242a31}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.primary{background:var(--accent-2);border-color:#3772bb}
+.topbar{height:46px;display:flex;align-items:center;gap:7px;padding:6px 8px;border-bottom:1px solid var(--line);background:#14171b;white-space:nowrap}
+.brand{font-weight:700;font-size:16px;margin-right:6px}.brand small{font-weight:400;color:var(--muted);margin-left:6px}
+.toolbar,.pane-actions{display:flex;gap:6px;align-items:center}.topbar-spacer{flex:1}.top-status{font-size:12px;color:var(--muted)}
+.workspace{height:calc(100% - 72px);display:grid;grid-template-columns:minmax(280px,var(--split)) 6px minmax(320px,1fr)}
+.pane{min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--panel)}.editor-pane{border-right:1px solid var(--line)}
+.pane-head{height:35px;display:flex;align-items:center;padding:0 10px;border-bottom:1px solid var(--line);background:#171a1f;color:var(--muted);font-size:12px;letter-spacing:.06em}
+.pane-actions{margin-left:auto}.pane-actions button,.pane-actions select{padding:4px 8px;font-size:11px}
+.editor-shell{flex:1;display:grid;grid-template-columns:auto minmax(0,1fr);min-height:0;background:var(--panel-3)}
+.line-numbers{margin:0;padding:14px 8px 14px 10px;min-width:50px;text-align:right;overflow:hidden;background:var(--gutter);color:#65717d;border-right:1px solid #20262d;font:var(--editor-font-size)/1.55 var(--mono);user-select:none;white-space:pre}
+.code-layer{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--panel-3)}
+.highlight,.editor{position:absolute;inset:0;margin:0;border:0;padding:14px 16px;font:var(--editor-font-size)/1.55 var(--mono);tab-size:2;white-space:pre;overflow:auto}
+.highlight{pointer-events:none;background:var(--panel-3);color:#dce6ef;z-index:1;visibility:hidden}.syntax-ready .highlight{visibility:visible}.highlight code{font:inherit}
+/* Fail-safe: o texto do textarea começa visível. Só fica transparente após o highlighter confirmar inicialização. */
+.editor{resize:none;outline:0;background:transparent;color:#e8edf2;caret-color:#fff;z-index:2;-webkit-text-fill-color:#e8edf2}
+.syntax-ready .editor{color:transparent;-webkit-text-fill-color:transparent}.editor::selection{background:#335f8d99}
+.tok-comment{color:#6a9955}.tok-doctype{color:#c586c0}.tok-tag{color:#569cd6}.tok-attr{color:#9cdcfe}.tok-string{color:#ce9178}.tok-keyword{color:#c586c0}.tok-number{color:#b5cea8}.tok-css-prop{color:#9cdcfe}.tok-selector{color:#d7ba7d}.tok-punct{color:#c5cbd3}
+.tag-match{position:absolute;right:10px;top:10px;z-index:4;padding:4px 7px;border:1px solid #32404f;background:#19202a;color:#9ec5ff;border-radius:4px;font-size:11px;pointer-events:none}
+.preview-area{flex:1;display:flex;flex-direction:column;min-height:0}.preview-wrap{flex:1;min-height:0;display:flex;justify-content:center;align-items:flex-start;overflow:auto;background:#222}.preview-stage{width:100%;height:100%;background:#fff;box-shadow:0 0 0 1px #333;transition:width .12s ease,height .12s ease;flex:0 0 auto}.preview-stage iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+.console-panel{height:var(--console-height);min-height:90px;max-height:46%;display:flex;flex-direction:column;background:#101318;border-top:1px solid var(--line)}.console-head{height:30px;display:flex;align-items:center;gap:7px;padding:0 8px;border-bottom:1px solid #242a31;color:var(--muted);font-size:11px}.console-head button{padding:3px 6px;font-size:10px}.console-list{flex:1;overflow:auto;font:12px/1.45 var(--mono);padding:4px 0}.log{padding:4px 8px;border-bottom:1px solid #1b2026;white-space:pre-wrap;word-break:break-word}.log-info{color:#d7dee7}.log-warn{color:var(--warn)}.log-error{color:#ff8787}.log-success{color:var(--success)}.log-meta{color:#65717d;margin-right:8px}
+.statusbar{height:26px;display:flex;align-items:center;gap:14px;padding:0 9px;border-top:1px solid var(--line);background:#15181c;color:var(--muted);font-size:11px;white-space:nowrap}.status-good{color:var(--success)}#context{color:#7fb4ff}#dirty{color:var(--warn)}.status-right{margin-left:auto}
+.drawer{position:fixed;left:10px;right:10px;bottom:34px;z-index:20;background:#171b20;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}.drawer-row,.drawer-title{display:flex;gap:7px;align-items:center;padding:10px}.drawer-row input{flex:1;min-width:120px;padding:7px 9px;background:#0f1216}.drawer-title{border-bottom:1px solid #242a31}.drawer-help{font-size:11px;color:var(--muted)}.drawer-list{max-height:260px;overflow:auto;padding:0 10px 10px}.drawer-item{padding:8px;border-top:1px solid #262d35;font-size:12px;display:flex;align-items:center;gap:8px}.drawer-item:first-child{border-top:0}.drawer-item button{margin-left:auto;padding:4px 7px;font-size:11px}.severity-error{color:#ff9292}.severity-warn{color:#efcb83}.severity-ok{color:var(--success)}.drawer-meta{color:var(--muted);font-size:11px}.drawer-empty{padding:14px;color:var(--muted);font-size:12px}
+.suggestions{position:fixed;z-index:30;min-width:220px;max-width:390px;max-height:280px;overflow:auto;background:#1a1f25;border:1px solid #343c46;border-radius:6px;box-shadow:0 8px 20px #0009}.suggestion{padding:6px 9px;font:13px var(--mono);cursor:pointer;display:flex;gap:12px}.suggestion:hover,.suggestion.active{background:#27303a}.suggestion small{color:#7f8b96;margin-left:auto}
+.toast{position:fixed;right:14px;bottom:38px;z-index:40;max-width:420px;padding:9px 12px;background:#20262d;border:1px solid #394450;border-radius:7px;box-shadow:var(--shadow);font-size:12px}.toast.error{border-color:#7c3535;color:#ffb1b1}.toast.success{border-color:#315b42;color:#b8e8c7}
+.console-hidden .console-panel{display:none}.fullscreen-preview .editor-pane,.fullscreen-preview .split-handle{display:none}.fullscreen-preview .workspace{grid-template-columns:1fr}.fullscreen-preview .preview-stage{width:100%!important;height:100%!important}.fullscreen-preview .preview-pane{border:0}
+@media(max-width:1000px){.top-status{display:none}.toolbar button{padding:6px 8px}.brand small{display:none}}
+@media(max-width:800px){html,body{overflow:auto}.topbar{position:sticky;top:0;z-index:10;overflow-x:auto}.workspace{height:auto;min-height:calc(100vh - 72px);grid-template-columns:1fr;grid-template-rows:65vh 65vh}.editor-pane{border-right:0;border-bottom:1px solid var(--line)}.statusbar{position:sticky;bottom:0;overflow-x:auto}.drawer{left:5px;right:5px}.drawer-row{flex-wrap:wrap}.drawer-row input{flex-basis:45%}}
+
+/* v1.1 hardening */
+.pane-actions .active-toggle{border-color:#3e7fc7;background:#1c4d7e;color:#eef7ff}
+.large-file-mode .editor-shell{grid-template-columns:minmax(0,1fr)}
+.large-file-mode .line-numbers{display:none}
+.large-file-mode .highlight{display:none}
+.large-file-mode .editor{color:#e8edf2!important;-webkit-text-fill-color:#e8edf2!important}
+.syntax-lite-mode .highlight{display:none}.syntax-lite-mode .editor{color:#e8edf2!important;-webkit-text-fill-color:#e8edf2!important}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.preview-stage{transition:none}}
+
+
+/* v1.2 editor + UX refinement */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.project-field{display:flex;align-items:center;min-width:150px;max-width:220px}.project-field input{width:100%;padding:6px 8px;background:#101419;font-size:12px}
+.split-handle{cursor:col-resize;background:#111419;border-left:1px solid #222933;border-right:1px solid #222933;position:relative;outline:0}
+.split-handle::after{content:"";position:absolute;left:2px;top:50%;width:2px;height:34px;transform:translateY(-50%);background:#3a4653;border-radius:2px}
+.split-handle:hover,.split-handle:focus-visible{background:#18212a}.split-handle:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+.console-handle{height:6px;flex:0 0 6px;cursor:row-resize;background:#111419;border-top:1px solid #252d36;border-bottom:1px solid #252d36;position:relative;outline:0}
+.console-handle::after{content:"";position:absolute;left:50%;top:2px;width:42px;height:2px;transform:translateX(-50%);background:#46515d;border-radius:2px}
+.console-handle:hover,.console-handle:focus-visible{background:#18212a}
+.console-hidden .console-handle{display:none}
+.zoom-label{min-width:39px;text-align:center;color:#8d99a5;font-size:10px;font-variant-numeric:tabular-nums}
+.search-meta{min-width:72px;color:var(--muted);font-size:11px;text-align:center}
+.compact-drawer{left:50%;right:auto;width:min(520px,calc(100vw - 20px));transform:translateX(-50%)}.compact-drawer input{min-width:180px}
+.word-wrap .editor-shell{grid-template-columns:minmax(0,1fr)}.word-wrap .line-numbers{display:none}.word-wrap .highlight,.word-wrap .editor{white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal}
+.focus-editor .preview-pane,.focus-editor .split-handle{display:none}.focus-editor .workspace{grid-template-columns:1fr}.focus-editor .editor-pane{border-right:0}
+.dragging-split,.dragging-console{user-select:none;cursor:col-resize}.dragging-console{cursor:row-resize}.dragging-split iframe,.dragging-console iframe{pointer-events:none}
+.drop-active::after{content:"Solte o arquivo HTML para abrir";position:fixed;inset:12px;z-index:100;display:grid;place-items:center;border:2px dashed #6aa6ff;background:#0b1119e8;color:#dcecff;font-size:20px;font-weight:600;border-radius:12px;pointer-events:none}
+#selectionState{font-variant-numeric:tabular-nums}
+@media(max-width:1150px){.project-field{max-width:170px}.editor-actions #commentBtn,.editor-actions .zoom-label{display:none}}
+@media(max-width:800px){.split-handle{display:none}.workspace{grid-template-columns:1fr}.project-field{min-width:130px;max-width:150px}.compact-drawer{bottom:40px}.console-handle{height:8px;flex-basis:8px}}
+
+.drawer button.active-toggle{border-color:#3e7fc7;background:#1c4d7e;color:#eef7ff}
+@media(max-width:1000px){.topbar{overflow-x:auto}}
+
+
+/* v1.3 final QA */
+.split-handle[aria-valuenow],.console-handle[aria-valuenow]{touch-action:none}
+@media(max-width:800px){.fullscreen-preview .workspace{grid-template-rows:minmax(70vh,1fr)}.fullscreen-preview .preview-pane{min-height:calc(100vh - 72px)}}
+
+
+/* v1.4 identity + legal */
+.about-drawer{left:50%;right:auto;width:min(880px,calc(100vw - 20px));transform:translateX(-50%)}
+.about-content{max-height:min(68vh,680px);overflow:auto;padding:18px}
+.about-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:2px 2px 16px;border-bottom:1px solid #262d35}
+.about-hero h2{margin:0 0 4px;font-size:22px;color:#f0f4f8}.about-hero h2 span{font-size:12px;font-weight:500;color:var(--muted);margin-left:7px}
+.about-hero p{margin:0;color:var(--muted);font-size:13px}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.about-card{background:#12161b;border:1px solid #29313a;border-radius:8px;padding:14px}.about-card h3{margin:0 0 10px;font-size:13px;color:#e5ebf2}.about-card p{margin:8px 0;color:#aeb8c2;font-size:12px;line-height:1.55}
+.about-details{margin:0;display:grid;gap:8px}.about-details>div{display:grid;grid-template-columns:90px 1fr;gap:9px;align-items:start}.about-details dt{color:var(--muted);font-size:11px}.about-details dd{margin:0;font-size:12px;color:#e4eaf0;overflow-wrap:anywhere}
+.about-content a{color:#79b2ff;text-decoration:none}.about-content a:hover{text-decoration:underline}.about-content a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.legal-details{margin-top:10px;border:1px solid #29313a;border-radius:8px;background:#12161b;overflow:hidden}.legal-details summary{cursor:pointer;padding:11px 13px;color:#dce5ee;font-size:12px;font-weight:600;user-select:none}.legal-details[open] summary{border-bottom:1px solid #29313a}.legal-details pre{margin:0;padding:14px;max-height:300px;overflow:auto;white-space:pre-wrap;color:#aeb8c2;font:11px/1.55 var(--mono);background:#0f1317}.privacy-copy{padding:4px 14px 12px;color:#aeb8c2;font-size:12px;line-height:1.55}
+@media(max-width:720px){.about-grid{grid-template-columns:1fr}.about-content{padding:12px}.about-details>div{grid-template-columns:78px 1fr}}
+
+/* v1.5 total review: syntax highlighting is deferred and fails safely to plain readable text. */
+
+</style>
+  
+</head>
+<body>
+  <header class="topbar" aria-label="Barra principal">
+    <div class="brand">PureHTML <small>1.5.1</small></div>
+    <label class="project-field" title="Nome usado ao salvar/exportar">
+      <span class="sr-only">Nome do arquivo</span>
+      <input id="projectName" value="meu-projeto.html" aria-label="Nome do arquivo HTML" spellcheck="false">
+    </label>
+    <nav class="toolbar" aria-label="Arquivo e edição">
+      <button id="newBtn" type="button">Novo</button>
+      <button id="openBtn" type="button" title="Ctrl+O">Abrir</button>
+      <button id="saveBtn" class="primary" type="button" title="Ctrl+S">Salvar</button>
+      <button id="saveAsBtn" type="button" title="Ctrl+Shift+S">Salvar como</button>
+      <button id="undoBtn" type="button" title="Desfazer" aria-label="Desfazer">↶</button>
+      <button id="redoBtn" type="button" title="Refazer" aria-label="Refazer">↷</button>
+      <button id="findBtn" type="button" title="Ctrl+F">Buscar</button>
+      <button id="gotoBtn" type="button" title="Ctrl+G">Ir à linha</button>
+      <button id="diagBtn" type="button">Diagnóstico</button>
+      <button id="historyBtn" type="button">Histórico</button>
+      <button id="aboutBtn" type="button">Sobre</button>
+    </nav>
+    <div class="topbar-spacer"></div>
+    <span id="storageStatus" class="top-status" title="Estado do armazenamento" aria-live="polite">Inicializando…</span>
+    <input id="fileInput" type="file" accept=".html,.htm,text/html" hidden>
+  </header>
+
+  <main class="workspace">
+    <section class="pane editor-pane" aria-label="Editor HTML">
+      <div class="pane-head">
+        <span>HTML ÚNICO</span>
+        <div class="pane-actions editor-actions">
+          <button id="commentBtn" type="button" title="Ctrl+/">Comentar</button>
+          <button id="wrapBtn" type="button" aria-pressed="false" title="Alternar quebra visual de linha">Quebra: não</button>
+          <button id="zoomOutBtn" type="button" title="Diminuir fonte">A−</button>
+          <span id="zoomLabel" class="zoom-label">100%</span>
+          <button id="zoomInBtn" type="button" title="Aumentar fonte">A+</button>
+          <button id="focusBtn" type="button" aria-pressed="false">Foco</button>
+          <button id="formatBtn" type="button" title="Remove espaços finais e excesso de linhas vazias">Limpar</button>
+        </div>
+      </div>
+      <div class="editor-shell">
+        <pre id="lineNums" class="line-numbers" aria-hidden="true">1</pre>
+        <div class="code-layer">
+          <pre id="highlight" class="highlight" aria-hidden="true"><code></code></pre>
+          <textarea id="editor" class="editor" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Código HTML" aria-controls="suggestions" aria-autocomplete="list"></textarea>
+          <div id="tagMatch" class="tag-match" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="splitHandle" class="split-handle" role="separator" aria-orientation="vertical" aria-label="Redimensionar editor e preview" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" tabindex="0"></div>
+
+    <section class="pane preview-pane" aria-label="Preview e depuração">
+      <div class="pane-head">
+        <span>PREVIEW + DEBUG</span>
+        <div class="pane-actions">
+          <select id="viewport" aria-label="Tamanho do preview">
+            <option value="fluid">Fluido</option>
+            <option value="390x844">390×844</option>
+            <option value="768x1024">768×1024</option>
+            <option value="1024x768">1024×768</option>
+            <option value="1280x720">1280×720</option>
+          </select>
+          <button id="refreshBtn" type="button">Atualizar</button>
+          <button id="liveBtn" type="button" aria-pressed="true" title="Ativar ou desativar o preview automático.">Live: ligado</button>
+          <button id="consoleBtn" type="button" aria-pressed="true">Console</button>
+          <button id="fullBtn" type="button" aria-pressed="false">Tela cheia</button>
+        </div>
+      </div>
+      <div class="preview-area">
+        <div class="preview-wrap">
+          <div id="previewStage" class="preview-stage">
+            <iframe id="previewFrame" title="Preview do projeto" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-modals allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe>
+          </div>
+        </div>
+        <div id="consoleHandle" class="console-handle" role="separator" aria-orientation="horizontal" aria-label="Redimensionar console" aria-valuemin="90" aria-valuemax="500" aria-valuenow="165" tabindex="0"></div>
+        <section id="consolePanel" class="console-panel" aria-label="Console JavaScript">
+          <div class="console-head">
+            <strong>CONSOLE</strong>
+            <span id="consoleCount">0 mensagens</span>
+            <div class="topbar-spacer"></div>
+            <button id="clearConsole" type="button">Limpar</button>
+          </div>
+          <div id="consoleList" class="console-list" role="log" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <section id="searchDrawer" role="dialog" class="drawer" aria-label="Buscar e substituir" hidden>
+    <div class="drawer-row">
+      <input id="findInput" placeholder="Buscar…" aria-label="Texto para buscar">
+      <input id="replaceInput" placeholder="Substituir por…" aria-label="Texto de substituição">
+      <button id="prevBtn" type="button">Anterior</button>
+      <button id="nextBtn" type="button">Próximo</button>
+      <button id="replaceBtn" type="button">Substituir</button>
+      <button id="caseBtn" type="button" aria-pressed="false" title="Diferenciar maiúsculas/minúsculas">Aa</button>
+      <button id="wordBtn" type="button" aria-pressed="false" title="Buscar palavra inteira">Palavra</button>
+      <span id="searchMeta" class="search-meta">0 resultados</span>
+      <button id="replaceAllBtn" type="button">Tudo</button>
+      <button data-close="searchDrawer" type="button">Fechar</button>
+    </div>
+  </section>
+
+  <section id="gotoDrawer" role="dialog" class="drawer compact-drawer" aria-label="Ir à linha" hidden>
+    <div class="drawer-row">
+      <strong>Ir à linha</strong>
+      <input id="gotoInput" type="number" min="1" step="1" inputmode="numeric" placeholder="Número da linha" aria-label="Número da linha">
+      <button id="gotoConfirmBtn" type="button">Ir</button>
+      <button data-close="gotoDrawer" type="button">Fechar</button>
+    </div>
+  </section>
+
+  <section id="diagDrawer" role="dialog" class="drawer" aria-label="Diagnóstico" hidden>
+    <div class="drawer-title">
+      <strong>Diagnóstico do documento</strong>
+      <div class="topbar-spacer"></div>
+      <button id="runDiagBtn" type="button">Analisar</button>
+      <button data-close="diagDrawer" type="button">Fechar</button>
+    </div>
+    <div id="diagList" class="drawer-list"></div>
+  </section>
+
+  <section id="historyDrawer" role="dialog" class="drawer history-drawer" aria-label="Histórico de snapshots" hidden>
+    <div class="drawer-title">
+      <strong>Histórico local</strong>
+      <span class="drawer-help">Snapshots automáticos e manuais; os mais antigos são removidos primeiro.</span>
+      <div class="topbar-spacer"></div>
+      <button id="snapshotBtn" type="button">Criar snapshot</button>
+      <button data-close="historyDrawer" type="button">Fechar</button>
+    </div>
+    <div id="historyList" class="drawer-list"></div>
+  </section>
+
+  <section id="aboutDrawer" role="dialog" class="drawer about-drawer" aria-label="Sobre o PureHTML" hidden>
+    <div class="drawer-title">
+      <strong>Sobre o PureHTML</strong>
+      <span class="drawer-help">Identidade, contato e licença do projeto.</span>
+      <div class="topbar-spacer"></div>
+      <button data-close="aboutDrawer" type="button">Fechar</button>
+    </div>
+    <div class="about-content">
+      <div class="about-hero">
+        <div>
+          <h2>PureHTML <span>1.5.1</span></h2>
+          <p>Editor offline-first para trabalhar com um único arquivo HTML puro.</p>
+        </div>
+      </div>
+
+      <div class="about-grid">
+        <section class="about-card">
+          <h3>Autoria e contato</h3>
+          <dl class="about-details">
+            <div><dt>Criado por</dt><dd>Joe Souza</dd></div>
+            <div><dt>Copyright</dt><dd>© 2026 AstarothX</dd></div>
+            <div><dt>Contato</dt><dd><a href="mailto:astarothxdev@gmail.com">astarothxdev@gmail.com</a></dd></div>
+            <div><dt>Instagram</dt><dd><a href="https://instagram.com/joesouzah" target="_blank" rel="noopener noreferrer">@joesouzah</a></dd></div>
+          </dl>
+        </section>
+
+        <section class="about-card">
+          <h3>Software livre</h3>
+          <p>PureHTML é disponibilizado sob a licença MIT. Você pode usar, copiar, modificar, distribuir, sublicenciar e vender cópias ou versões derivadas, desde que o aviso de copyright e a licença sejam preservados conforme os termos da MIT License.</p>
+          <p>O software é fornecido “como está”, sem garantias. A limitação de responsabilidade é a prevista pela própria MIT License e pela legislação aplicável.</p>
+        </section>
+      </div>
+
+      <details class="legal-details">
+        <summary>MIT License — texto completo</summary>
+        <pre>MIT License
+
+Copyright (c) 2026 AstarothX
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+      </details>
+
+      <details class="legal-details">
+        <summary>Privacidade</summary>
+        <div class="privacy-copy">
+          <p>O PureHTML não exige conta e não envia o conteúdo dos seus projetos ao criador. O autosave, a recuperação e os snapshots são mantidos localmente no navegador.</p>
+          <p>O HTML criado pelo usuário é executado no preview isolado. Se você escrever código que faça requisições de rede, carregue recursos externos ou envie dados, essas conexões pertencem ao projeto criado por você, não a uma coleta automática do PureHTML.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <div id="suggestions" class="suggestions" hidden role="listbox"></div>
+  <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
+  <footer class="statusbar">
+    <span id="readyState" class="status-good">● Pronto</span>
+    <span id="cursor">Ln 1, Col 1</span>
+    <span id="context">HTML</span>
+    <span id="chars">0 caracteres</span>
+    <span id="selectionState">Sem seleção</span>
+    <span id="autosaveState">Autosave aguardando</span>
+    <span id="dirty" hidden>● alterações locais</span>
+    <span id="networkState" class="status-right">Offline compatível</span>
+  </footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const APP_VERSION = '1.5.1';
+  const DB_NAME = 'purehtml-studio';
+  const DB_VERSION = 1;
+  const MAX_SNAPSHOTS = 30;
+  const AUTOSAVE_DELAY = 450;
+  const LARGE_AUTOSAVE_DELAY = 1800;
+  const PREVIEW_DELAY = 220;
+  const HIGHLIGHT_DELAY = 220;
+  const HIGHLIGHT_HARD_LIMIT = 50000;
+  const HIGHLIGHT_SLOW_MS = 700;
+  const HIGHLIGHT_RECOVERY_LIMIT = 20000;
+  const AUTO_SNAPSHOT_INTERVAL = 180000;
+  const LARGE_FILE_THRESHOLD = 1500000;
+  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+  const MAX_CONSOLE_ROWS = 750;
+  const MAX_CONSOLE_VALUE = 20000;
+  const MAX_SINGLE_SNAPSHOT_CHARS = 4_000_000;
+  const MAX_SNAPSHOT_CHARS_TOTAL = 12_000_000;
+  const LOCAL_SNAPSHOT_CHARS_TOTAL = 500_000;
+  const RECOVERY_MIRROR_MAX_CHARS = 1_500_000;
+  const LOCAL_DOC_KEY = 'purehtml.current';
+  const LOCAL_SNAPSHOTS_KEY = 'purehtml.snapshots';
+  const EMERGENCY_KEY = 'purehtml.emergency.v1';
+  const EMERGENCY_MAX_CHARS = 2_000_000;
+
+  const STARTER = `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu HTML</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: #f4f4f4;
+      color: #222;
+    }
+
+    .card {
+      max-width: 640px;
+      margin: auto;
+      padding: 28px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    button {
+      padding: 10px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+    }
+
+    .purehtml-info {
+      margin-top: 30px;
+      padding-top: 22px;
+      border-top: 1px solid #ddd;
+      color: #555;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .purehtml-info h2 {
+      margin: 0 0 12px;
+      color: #222;
+      font-size: 18px;
+    }
+
+    .purehtml-info p {
+      margin: 6px 0;
+    }
+
+    .purehtml-info a {
+      color: #1756a9;
+    }
+
+    .purehtml-info small {
+      display: block;
+      margin-top: 12px;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Olá, HTML.</h1>
+    <p>Edite este único arquivo e veja o resultado em tempo real.</p>
+    <button onclick="mensagem()">Testar JavaScript</button>
+
+    <footer class="purehtml-info">
+      <h2>Autoria e contato</h2>
+
+      <p><strong>Criado por:</strong> Joe Souza</p>
+      <p><strong>Copyright:</strong> © 2026 AstarothX</p>
+
+      <p>
+        <strong>Contato:</strong>
+        <a href="mailto:astarothxdev@gmail.com">astarothxdev@gmail.com</a>
+      </p>
+
+      <p>
+        <strong>Instagram:</strong>
+        <a href="https://instagram.com/joesouzah"
+           target="_blank"
+           rel="noopener noreferrer">@joesouzah</a>
+      </p>
+
+      <small>PureHTML — software livre e de código aberto sob MIT License.</small>
+    </footer>
+  </main>
+
+  <script>
+    console.log('Preview carregado com sucesso.');
+
+    function mensagem() {
+      console.log('Botão clicado!');
+      alert('Tudo dentro de um único HTML.');
+    }
+  <\/script>
+</body>
+</html>`
+
+  const TAGS = [
+    'html','head','body','title','meta','link','style','script','main','header','footer','nav','section','article','aside',
+    'div','span','p','h1','h2','h3','h4','h5','h6','a','img','button','input','textarea','select','option','label','form',
+    'table','thead','tbody','tfoot','tr','th','td','ul','ol','li','details','summary','dialog','canvas','video','audio','source',
+    'strong','em','small','code','pre','blockquote','figure','figcaption','br','hr'
+  ];
+  const ATTRS = [
+    'id','class','title','style','hidden','lang','dir','data-','aria-label','aria-hidden','role','href','target','rel','download',
+    'src','alt','width','height','loading','type','name','value','placeholder','checked','selected','disabled','required','min','max',
+    'step','pattern','autocomplete','onclick','oninput','onchange','onsubmit','tabindex'
+  ];
+  const ATTR_VALUES = {
+    target: ['_blank','_self','_parent','_top'], rel: ['noopener','noreferrer','nofollow'], loading: ['lazy','eager'],
+    dir: ['ltr','rtl','auto'], type: ['button','submit','reset','text','email','password','number','checkbox','radio','file','date']
+  };
+  const CSS_PROPS = [
+    'display','position','top','right','bottom','left','width','height','max-width','min-width','max-height','min-height','margin',
+    'padding','background','background-color','background-image','color','font','font-family','font-size','font-weight','line-height',
+    'text-align','border','border-radius','box-shadow','overflow','overflow-x','overflow-y','opacity','transform','transition','grid',
+    'grid-template-columns','grid-template-rows','gap','align-items','justify-content','flex','flex-direction','flex-wrap','z-index'
+  ];
+  const JS_WORDS = [
+    'const','let','var','function','return','if','else','for','while','switch','case','break','continue','class','new','try','catch',
+    'throw','async','await','document','window','console','querySelector','querySelectorAll','getElementById','addEventListener','classList',
+    'textContent','innerHTML','value','map','filter','forEach','setTimeout','setInterval','localStorage','indexedDB','fetch'
+  ];
+  const VOID_TAGS = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+  const OPTIONAL_END_TAGS = new Set(['li','p','dt','dd','rt','rp','optgroup','option','colgroup','thead','tbody','tfoot','tr','td','th']);
+  const JS_KEYWORDS = new Set(['const','let','var','function','return','if','else','for','while','switch','case','break','continue','new','class','try','catch','throw','async','await','typeof','instanceof','in','of','this','true','false','null','undefined']);
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    editor: $('editor'), highlight: $('highlight'), lineNums: $('lineNums'), frame: $('previewFrame'), previewStage: $('previewStage'),
+    fileInput: $('fileInput'), storageStatus: $('storageStatus'), readyState: $('readyState'), cursor: $('cursor'), context: $('context'),
+    chars: $('chars'), autosaveState: $('autosaveState'), dirty: $('dirty'), networkState: $('networkState'), tagMatch: $('tagMatch'),
+    suggestions: $('suggestions'), consoleList: $('consoleList'), consoleCount: $('consoleCount'), searchDrawer: $('searchDrawer'),
+    diagDrawer: $('diagDrawer'), historyDrawer: $('historyDrawer'), aboutDrawer: $('aboutDrawer'), gotoDrawer: $('gotoDrawer'), diagList: $('diagList'), historyList: $('historyList'), toast: $('toast'),
+    projectName: $('projectName'), splitHandle: $('splitHandle'), consoleHandle: $('consoleHandle'), selectionState: $('selectionState'), searchMeta: $('searchMeta')
+  };
+
+  const Utils = {
+    escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    },
+    debounce(fn, delay) {
+      let timer = 0;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+      };
+    },
+    uid() {
+      const webCrypto = globalThis.crypto;
+      if (webCrypto?.randomUUID) return webCrypto.randomUUID();
+      if (webCrypto?.getRandomValues) {
+        const bytes = new Uint8Array(16);
+        webCrypto.getRandomValues(bytes);
+        return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      }
+      return `fallback-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+    },
+    isWordChar(char) {
+      if (!char) return false;
+      try { return /[\p{L}\p{N}_$]/u.test(char); }
+      catch { return /[A-Za-z0-9_$À-ÿ]/.test(char); }
+    },
+    safeJSONParse(raw, fallback) {
+      try { return JSON.parse(raw); } catch { return fallback; }
+    },
+    truncate(value, max = MAX_CONSOLE_VALUE) {
+      const text = String(value ?? '');
+      return text.length <= max ? text : `${text.slice(0, max)}… [truncado]`;
+    },
+    toText(value) {
+      if (typeof value === 'string') return Utils.truncate(value);
+      if (value instanceof Error) return Utils.truncate(value.stack || value.message);
+      try { return Utils.truncate(JSON.stringify(value, null, 2)); } catch { return Utils.truncate(String(value)); }
+    },
+    lineAndColumn(source, index) {
+      const end = Math.max(0, Math.min(Number(index) || 0, source.length));
+      let line = 1, lastBreak = -1;
+      for (let i = 0; i < end; i++) if (source.charCodeAt(i) === 10) { line++; lastBreak = i; }
+      return {line, column: end - lastBreak};
+    },
+    formatDate(timestamp) {
+      try { return new Intl.DateTimeFormat('pt-BR', {dateStyle:'short', timeStyle:'medium'}).format(new Date(timestamp)); }
+      catch { return new Date(timestamp).toLocaleString(); }
+    },
+    lineFromIndex(source, index) {
+      return source.slice(0, Math.max(0, index)).split('\n').length;
+    },
+    hasOngoingProject(value) {
+      return Boolean(value && typeof value.content === 'string' && value.content.trim().length > 0);
+    },
+    sanitizeFilename(name) {
+      const cleaned = String(name || 'meu-projeto.html').replace(/[\\/:*?"<>|\x00-\x1F]/g, '_').trim();
+      return /\.html?$/i.test(cleaned) ? cleaned : `${cleaned || 'meu-projeto'}.html`;
+    }
+  };
+
+  class StorageEngine {
+    constructor() {
+      this.db = null;
+      this.mode = 'memory';
+      this.memoryDoc = null;
+      this.memorySnapshots = [];
+      this.lastError = null;
+    }
+
+    probeLocalStorage() {
+      try {
+        const key = 'purehtml.probe';
+        localStorage.setItem(key, '1');
+        localStorage.removeItem(key);
+        return true;
+      } catch (error) {
+        this.lastError = error;
+        return false;
+      }
+    }
+
+    downgradeFromIndexedDB(error) {
+      this.lastError = error || this.lastError;
+      try { this.db?.close(); } catch { /* noop */ }
+      this.db = null;
+      this.mode = this.probeLocalStorage() ? 'localStorage' : 'memory';
+    }
+
+    async open() {
+      if (!('indexedDB' in window)) {
+        this.mode = this.probeLocalStorage() ? 'localStorage' : 'memory';
+        return this.mode;
+      }
+      try {
+        this.db = await new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          let settled = false;
+          const finish = (fn, value) => {
+            if (settled) return false;
+            settled = true;
+            clearTimeout(timeout);
+            fn(value);
+            return true;
+          };
+          const timeout = setTimeout(() => finish(reject, new Error('IndexedDB demorou para responder; usando contingência local.')), 3500);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('documents')) db.createObjectStore('documents', {keyPath:'id'});
+            if (!db.objectStoreNames.contains('snapshots')) {
+              const store = db.createObjectStore('snapshots', {keyPath:'id', autoIncrement:true});
+              store.createIndex('documentId', 'documentId', {unique:false});
+              store.createIndex('createdAt', 'createdAt', {unique:false});
+            }
+            if (!db.objectStoreNames.contains('outbox')) db.createObjectStore('outbox', {keyPath:'id', autoIncrement:true});
+            if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', {keyPath:'key'});
+          };
+          request.onsuccess = () => {
+            if (!finish(resolve, request.result)) {
+              try { request.result.close(); } catch { /* conexão tardia descartada */ }
+            }
+          };
+          request.onerror = () => finish(reject, request.error || new Error('Falha ao abrir IndexedDB'));
+          request.onblocked = () => { this.lastError = new Error('IndexedDB aguardando outra aba concluir uma atualização.'); };
+        });
+        this.db.onversionchange = () => { try { this.db?.close(); } catch { /* noop */ } };
+        this.mode = 'indexedDB';
+        await this.migrateFallbackSnapshots();
+      } catch (error) { this.downgradeFromIndexedDB(error); }
+      return this.mode;
+    }
+
+    tx(storeName, mode, action) {
+      return new Promise((resolve, reject) => {
+        let tx, request, result, settled = false;
+        const fail = error => {
+          if (settled) return;
+          settled = true;
+          reject(error || new Error('Falha de transação'));
+        };
+        try {
+          tx = this.db.transaction(storeName, mode);
+          request = action(tx.objectStore(storeName));
+        } catch (error) { fail(error); return; }
+        tx.oncomplete = () => {
+          if (settled) return;
+          settled = true;
+          resolve(result);
+        };
+        tx.onabort = () => fail(tx.error || new Error('Transação cancelada'));
+        tx.onerror = () => fail(tx.error || new Error('Falha de transação'));
+        if (request && 'onsuccess' in request) {
+          request.onsuccess = () => { result = request.result; };
+          request.onerror = () => {
+            try { tx.abort(); } catch { /* noop */ }
+            fail(request.error || new Error('Falha de operação'));
+          };
+        }
+      });
+    }
+
+    readLocalDoc({degrade = true} = {}) {
+      if (this.mode === 'memory' && degrade) return this.memoryDoc;
+      try {
+        const parsed = Utils.safeJSONParse(localStorage.getItem(LOCAL_DOC_KEY), null);
+        return parsed && typeof parsed.content === 'string' ? parsed : this.memoryDoc;
+      } catch (error) {
+        this.lastError = error;
+        if (degrade && this.mode === 'localStorage') this.mode = 'memory';
+        return this.memoryDoc;
+      }
+    }
+
+    writeLocalDoc(doc) {
+      this.memoryDoc = doc;
+      if (this.mode === 'memory') return false;
+      try { localStorage.setItem(LOCAL_DOC_KEY, JSON.stringify(doc)); return true; }
+      catch (error) { this.lastError = error; if (this.mode === 'localStorage') this.mode = 'memory'; return false; }
+    }
+
+    writeRecoveryMirror(doc) {
+      this.memoryDoc = doc;
+      try {
+        if (String(doc.content || '').length > RECOVERY_MIRROR_MAX_CHARS) {
+          localStorage.removeItem(LOCAL_DOC_KEY);
+          return false;
+        }
+        localStorage.setItem(LOCAL_DOC_KEY, JSON.stringify(doc));
+        return true;
+      } catch (error) { this.lastError = error; return false; }
+    }
+
+    readLocalSnapshots() {
+      try {
+        const parsed = Utils.safeJSONParse(localStorage.getItem(LOCAL_SNAPSHOTS_KEY), []);
+        return Array.isArray(parsed) ? parsed.filter(x => x && typeof x.content === 'string') : [...this.memorySnapshots];
+      } catch (error) {
+        this.lastError = error;
+        return [...this.memorySnapshots];
+      }
+    }
+
+    writeLocalSnapshots(items) {
+      this.memorySnapshots = [...items];
+      // Em modo memória o snapshot continua útil durante a sessão; apenas não é persistente.
+      if (this.mode === 'memory') return true;
+      try { localStorage.setItem(LOCAL_SNAPSHOTS_KEY, JSON.stringify(items)); return true; }
+      catch (error) { this.lastError = error; return false; }
+    }
+
+    snapshotFingerprint(item) {
+      const content = String(item?.content || '');
+      return `${Number(item?.createdAt)||0}|${item?.name||''}|${item?.reason||''}|${content.length}|${content.slice(0,64)}|${content.slice(-64)}`;
+    }
+
+    async migrateFallbackSnapshots() {
+      if (this.mode !== 'indexedDB') return;
+      const local = this.readLocalSnapshots();
+      if (!local.length) return;
+      try {
+        const existing = await this.tx('snapshots','readonly',store=>store.getAll()) || [];
+        const known = new Set(existing.map(item => this.snapshotFingerprint(item)));
+        for (const item of local) {
+          const clean = {
+            documentId:'current', name:Utils.sanitizeFilename(item.name), content:String(item.content || ''),
+            reason:String(item.reason || 'snapshot').slice(0,80), createdAt:Number(item.createdAt) || Date.now()
+          };
+          const key = this.snapshotFingerprint(clean);
+          if (known.has(key) || clean.content.length > MAX_SINGLE_SNAPSHOT_CHARS) continue;
+          await this.tx('snapshots','readwrite',store=>store.add(clean));
+          known.add(key);
+        }
+        await this.pruneSnapshots(MAX_SNAPSHOTS);
+        try { localStorage.removeItem(LOCAL_SNAPSHOTS_KEY); } catch { /* migração já persistiu no IndexedDB */ }
+        this.memorySnapshots = [];
+      } catch (error) {
+        this.lastError = error;
+      }
+    }
+
+    isPersistent() { return this.mode === 'indexedDB' || this.mode === 'localStorage'; }
+
+    async getDocument() {
+      const local = this.readLocalDoc({degrade:false});
+      if (this.mode === 'indexedDB') {
+        try {
+          const dbDoc = await this.tx('documents', 'readonly', store => store.get('current'));
+          const localValid = Utils.hasOngoingProject(local);
+          const dbValid = Utils.hasOngoingProject(dbDoc);
+          const chosen = localValid && (!dbValid || Number(local.updatedAt || 0) > Number(dbDoc.updatedAt || 0)) ? local : dbDoc;
+          if (chosen === local && localValid) {
+            try { await this.tx('documents','readwrite',store=>store.put({...local,id:'current'})); } catch (error) { this.lastError = error; }
+          }
+          return chosen || null;
+        } catch (error) { this.downgradeFromIndexedDB(error); }
+      }
+      return this.readLocalDoc();
+    }
+
+    async saveDocument(doc) {
+      const normalized = {
+        id:'current', name:Utils.sanitizeFilename(doc.name), content:typeof doc.content === 'string' ? doc.content : '',
+        createdAt:Number(doc.createdAt) || Date.now(), updatedAt:Date.now(), revision:Math.max(0, Number(doc.revision) || 0)
+      };
+      this.memoryDoc = normalized;
+      if (this.mode === 'indexedDB') {
+        try {
+          await this.tx('documents', 'readwrite', store => store.put(normalized));
+          this.writeRecoveryMirror(normalized);
+          return normalized;
+        } catch (error) { this.downgradeFromIndexedDB(error); }
+      }
+      this.writeLocalDoc(normalized);
+      return normalized;
+    }
+
+    async addSnapshot(snapshot) {
+      const item = {
+        documentId:'current', name:Utils.sanitizeFilename(snapshot.name), content:String(snapshot.content || ''),
+        reason:String(snapshot.reason || 'snapshot').slice(0,80), createdAt:Date.now()
+      };
+      if (item.content.length > MAX_SINGLE_SNAPSHOT_CHARS) return {saved:false, reason:'too-large'};
+      if (this.mode === 'indexedDB') {
+        try {
+          await this.tx('snapshots','readwrite',store=>store.add(item));
+          await this.pruneSnapshots(MAX_SNAPSHOTS);
+          return {saved:true};
+        } catch (error) {
+          this.lastError = error;
+          return {saved:false, reason:error?.name || 'idb-error'};
+        }
+      }
+      const items = this.readLocalSnapshots();
+      items.unshift({...item,id:Date.now()+Math.random()});
+      const budget = this.mode === 'localStorage' ? LOCAL_SNAPSHOT_CHARS_TOTAL : 2_000_000;
+      if (item.content.length > budget) return {saved:false, reason:'too-large'};
+      const kept = [];
+      let total = 0;
+      for (const candidate of items) {
+        const size = String(candidate.content || '').length;
+        if (kept.length >= MAX_SNAPSHOTS || total + size > budget) continue;
+        kept.push(candidate); total += size;
+      }
+      const saved = this.writeLocalSnapshots(kept);
+      return {saved, reason:saved ? '' : 'quota'};
+    }
+
+    async listSnapshots() {
+      if (this.mode === 'indexedDB') {
+        try {
+          const items = await this.tx('snapshots','readonly',store=>store.getAll());
+          return (items || []).sort((a,b)=>b.createdAt-a.createdAt);
+        } catch (error) {
+          this.lastError = error;
+          return this.readLocalSnapshots().sort((a,b)=>b.createdAt-a.createdAt);
+        }
+      }
+      return this.readLocalSnapshots().sort((a,b)=>b.createdAt-a.createdAt);
+    }
+
+    async pruneSnapshots(max) {
+      if (this.mode !== 'indexedDB') return;
+      const items = (await this.tx('snapshots','readonly',store=>store.getAll()) || []).sort((a,b)=>b.createdAt-a.createdAt);
+      let total = 0, kept = 0;
+      for (const item of items) {
+        const size = String(item.content || '').length;
+        const keep = kept < max && total + size <= MAX_SNAPSHOT_CHARS_TOTAL;
+        if (keep) { kept++; total += size; }
+        else await this.tx('snapshots','readwrite',store=>store.delete(item.id));
+      }
+    }
+
+    async queueNetworkRequest(request) {
+      const url = new URL(request.url, location.href);
+      if (url.origin !== location.origin) throw new Error('Fila de rede aceita apenas requisições same-origin.');
+      const method = String(request.method || 'POST').toUpperCase();
+      if (!['POST','PUT','PATCH','DELETE'].includes(method)) throw new Error('Método não suportado pela fila de rede.');
+      const headers = Object.fromEntries(new Headers(request.headers || {}).entries());
+      const record = {url:url.href,method,headers,body:request.body ?? null,createdAt:Date.now(),attempts:0,nextAttemptAt:0};
+      if (this.mode !== 'indexedDB') throw new Error('Fila de rede requer IndexedDB.');
+      await this.tx('outbox','readwrite',store=>store.add(record));
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        if ('sync' in registration) await registration.sync.register('purehtml-outbox');
+      }
+    }
+  }
+
+  class SyntaxHighlighter {
+    constructor(target) { this.target = target; }
+
+    escape(value) { return Utils.escapeHTML(value); }
+
+    findTagEnd(source, start) {
+      let quote = '';
+      for (let i = start + 1; i < source.length; i++) {
+        const c = source[i];
+        if (quote) {
+          if (c === quote && source[i - 1] !== '\\') quote = '';
+        } else if (c === '"' || c === "'") quote = c;
+        else if (c === '>') return i;
+      }
+      return source.length - 1;
+    }
+
+    highlightTag(text) {
+      let out = '';
+      let i = 0;
+      const open = text.match(/^<\s*\/?\s*/)?.[0] || '<';
+      out += `<span class="tok-punct">${this.escape(open)}</span>`;
+      i = open.length;
+      const nameMatch = text.slice(i).match(/^([A-Za-z][\w:-]*)/);
+      if (nameMatch) {
+        out += `<span class="tok-tag">${this.escape(nameMatch[1])}</span>`;
+        i += nameMatch[1].length;
+      }
+      while (i < text.length) {
+        const c = text[i];
+        if (c === '"' || c === "'") {
+          const quote = c;
+          let j = i + 1;
+          while (j < text.length) {
+            if (text[j] === quote && text[j - 1] !== '\\') { j++; break; }
+            j++;
+          }
+          out += `<span class="tok-string">${this.escape(text.slice(i, j))}</span>`;
+          i = j;
+          continue;
+        }
+        const id = text.slice(i).match(/^([A-Za-z_:][\w:.-]*)/);
+        if (id) {
+          let j = i + id[1].length;
+          while (/\s/.test(text[j] || '')) j++;
+          if (text[j] === '=') out += `<span class="tok-attr">${this.escape(id[1])}</span>`;
+          else out += this.escape(id[1]);
+          i += id[1].length;
+          continue;
+        }
+        if (c === '>' || (c === '/' && text[i+1] === '>')) {
+          const punct = c === '/' ? '/>' : '>';
+          out += `<span class="tok-punct">${this.escape(punct)}</span>`;
+          i += punct.length;
+          continue;
+        }
+        out += this.escape(c);
+        i++;
+      }
+      return out;
+    }
+
+    highlightJS(source) {
+      let out = '', i = 0;
+      while (i < source.length) {
+        const c = source[i], n = source[i+1];
+        if (c === '/' && n === '/') {
+          const end = source.indexOf('\n', i);
+          const j = end === -1 ? source.length : end;
+          out += `<span class="tok-comment">${this.escape(source.slice(i,j))}</span>`;
+          i = j; continue;
+        }
+        if (c === '/' && n === '*') {
+          const end = source.indexOf('*/', i+2);
+          const j = end === -1 ? source.length : end+2;
+          out += `<span class="tok-comment">${this.escape(source.slice(i,j))}</span>`;
+          i = j; continue;
+        }
+        if (c === '"' || c === "'" || c === '`') {
+          const quote = c; let j = i+1;
+          while (j < source.length) {
+            if (source[j] === quote && source[j-1] !== '\\') { j++; break; }
+            j++;
+          }
+          out += `<span class="tok-string">${this.escape(source.slice(i,j))}</span>`;
+          i = j; continue;
+        }
+        const number = source.slice(i).match(/^\b\d+(?:\.\d+)?\b/);
+        if (number) { out += `<span class="tok-number">${number[0]}</span>`; i += number[0].length; continue; }
+        const ident = source.slice(i).match(/^[A-Za-z_$][\w$]*/);
+        if (ident) {
+          out += JS_KEYWORDS.has(ident[0]) ? `<span class="tok-keyword">${ident[0]}</span>` : this.escape(ident[0]);
+          i += ident[0].length; continue;
+        }
+        out += this.escape(c); i++;
+      }
+      return out;
+    }
+
+    highlightCSS(source) {
+      let out = '', i = 0, inBlock = false;
+      while (i < source.length) {
+        const c = source[i], n = source[i+1];
+        if (c === '/' && n === '*') {
+          const end = source.indexOf('*/', i+2), j = end === -1 ? source.length : end+2;
+          out += `<span class="tok-comment">${this.escape(source.slice(i,j))}</span>`; i = j; continue;
+        }
+        if (c === '"' || c === "'") {
+          const quote = c; let j = i+1;
+          while (j < source.length) { if (source[j] === quote && source[j-1] !== '\\') { j++; break; } j++; }
+          out += `<span class="tok-string">${this.escape(source.slice(i,j))}</span>`; i = j; continue;
+        }
+        if (c === '{') { inBlock = true; out += this.escape(c); i++; continue; }
+        if (c === '}') { inBlock = false; out += this.escape(c); i++; continue; }
+        const ident = source.slice(i).match(/^-?-?[A-Za-z_][\w-]*/);
+        if (ident) {
+          let j = i + ident[0].length;
+          while (/\s/.test(source[j] || '')) j++;
+          if (inBlock && source[j] === ':') out += `<span class="tok-css-prop">${this.escape(ident[0])}</span>`;
+          else if (!inBlock) out += `<span class="tok-selector">${this.escape(ident[0])}</span>`;
+          else out += this.escape(ident[0]);
+          i += ident[0].length; continue;
+        }
+        out += this.escape(c); i++;
+      }
+      return out;
+    }
+
+    render(source) {
+      const lower = source.toLowerCase();
+      let out = '', i = 0;
+      while (i < source.length) {
+        if (source.startsWith('<!--', i)) {
+          const end = source.indexOf('-->', i+4), j = end === -1 ? source.length : end+3;
+          out += `<span class="tok-comment">${this.escape(source.slice(i,j))}</span>`; i = j; continue;
+        }
+        if (source[i] === '<') {
+          const end = this.findTagEnd(source, i), tagText = source.slice(i, end+1);
+          if (/^<!doctype\b/i.test(tagText)) out += `<span class="tok-doctype">${this.escape(tagText)}</span>`;
+          else out += this.highlightTag(tagText);
+          const opening = tagText.match(/^<\s*([A-Za-z][\w:-]*)/i);
+          const tag = opening?.[1]?.toLowerCase();
+          i = end + 1;
+          if ((tag === 'script' || tag === 'style') && !/\/\s*>$/.test(tagText)) {
+            const closeNeedle = `</${tag}`;
+            const closeStart = lower.indexOf(closeNeedle, i);
+            if (closeStart >= 0) {
+              const body = source.slice(i, closeStart);
+              out += tag === 'script' ? this.highlightJS(body) : this.highlightCSS(body);
+              const closeEnd = this.findTagEnd(source, closeStart);
+              out += this.highlightTag(source.slice(closeStart, closeEnd+1));
+              i = closeEnd + 1;
+            }
+          }
+          continue;
+        }
+        const next = source.indexOf('<', i);
+        const j = next === -1 ? source.length : next;
+        out += this.escape(source.slice(i,j)); i = j;
+      }
+      this.target.innerHTML = out + '\n';
+    }
+  }
+
+  class Diagnostics {
+    analyze(source) {
+      const issues = [];
+      const push = (severity,message,index=0) => issues.push({severity,message,line:Utils.lineFromIndex(source,Math.max(0,index))});
+      if (!/<!doctype\s+html\s*>/i.test(source)) push('warn','DOCTYPE HTML não encontrado.',0);
+      if (!/<html(?:\s|>)/i.test(source)) push('error','Tag <html> não encontrada.',0);
+      if (!/<head(?:\s|>)/i.test(source)) push('warn','Tag <head> não encontrada.',0);
+      if (!/<body(?:\s|>)/i.test(source)) push('error','Tag <body> não encontrada.',0);
+      if (!/<meta\b[^>]*charset\s*=/i.test(source)) push('warn','Meta charset não encontrada.',Math.max(0,source.search(/<head/i)));
+      if (!/<meta\b[^>]*name\s*=\s*["']viewport["']/i.test(source)) push('warn','Meta viewport não encontrada.',Math.max(0,source.search(/<head/i)));
+      if (!/<title\b[^>]*>[\s\S]*?<\/title>/i.test(source)) push('warn','Documento sem <title>.',Math.max(0,source.search(/<head/i)));
+
+      const maskBody = text => text.replace(/[^\r\n]/g,' ');
+      let structural = source.replace(/<!--[\s\S]*?-->/g,maskBody);
+      structural = structural.replace(/(<script\b[^>]*>)([\s\S]*?)(<\/script\s*>)/gi,(_,open,body,close)=>open+maskBody(body)+close);
+      structural = structural.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style\s*>)/gi,(_,open,body,close)=>open+maskBody(body)+close);
+      structural = structural.replace(/(<(?:title|textarea)\b[^>]*>)([\s\S]*?)(<\/(?:title|textarea)\s*>)/gi,(_,open,body,close)=>open+maskBody(body)+close);
+
+      const ids = [...structural.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)];
+      const seen = new Map();
+      for (const match of ids) {
+        if (seen.has(match[1])) push('error',`ID duplicado: ${match[1]}`,match.index);
+        else seen.set(match[1],match.index);
+      }
+
+      const tagRx=/<\/?([A-Za-z][\w:-]*)\b[^>]*>/g, stack=[];
+      let match;
+      while ((match=tagRx.exec(structural))) {
+        const full=match[0],tag=match[1].toLowerCase();
+        if (VOID_TAGS.has(tag)) continue;
+        if (/\/\s*>$/.test(full)) {
+          const knownHtml = TAGS.includes(tag);
+          if (knownHtml) push('warn',`A barra de autofechamento em <${tag}/> é ignorada em HTML; use uma tag de fechamento.`,match.index);
+          if (!knownHtml) continue;
+        }
+        if (!full.startsWith('</')) { stack.push({tag,index:match.index}); continue; }
+        let found=-1;
+        for (let i=stack.length-1;i>=0;i--) {
+          if (stack[i].tag===tag) { found=i; break; }
+          if (!OPTIONAL_END_TAGS.has(stack[i].tag)) break;
+        }
+        if (found===-1) push('error',`Fechamento inesperado </${tag}>.`,match.index);
+        else stack.splice(found);
+      }
+      for (const item of stack.slice(-20)) if (!OPTIONAL_END_TAGS.has(item.tag)) push('error',`Tag <${item.tag}> parece não ter fechamento.`,item.index);
+
+      const openScript=(structural.match(/<script\b[^>]*>/gi)||[]).length, closeScript=(structural.match(/<\/script\s*>/gi)||[]).length;
+      if (openScript!==closeScript) push('error',`Quantidade de <script> (${openScript}) e <\/script> (${closeScript}) não coincide.`,Math.max(0,source.search(/<script/i)));
+      const openStyle=(structural.match(/<style\b[^>]*>/gi)||[]).length, closeStyle=(structural.match(/<\/style\s*>/gi)||[]).length;
+      if (openStyle!==closeStyle) push('error',`Quantidade de <style> (${openStyle}) e </style> (${closeStyle}) não coincide.`,Math.max(0,source.search(/<style/i)));
+      if (!issues.length) issues.push({severity:'ok',message:'Nenhum problema estrutural básico encontrado.',line:1});
+      return issues;
+    }
+  }
+
+  class PreviewBridge {
+    constructor(frame,consoleList,consoleCount) {
+      this.frame=frame; this.consoleList=consoleList; this.consoleCount=consoleCount;
+      this.sequence=0; this.count=0; this.channel=Utils.uid();
+      window.addEventListener('message',event=>this.onMessage(event));
+    }
+    clear() { this.consoleList.replaceChildren(); this.count=0; this.consoleCount.textContent='0 mensagens'; }
+    log(type,values) {
+      this.count++;
+      while (this.consoleList.childElementCount >= MAX_CONSOLE_ROWS) this.consoleList.firstElementChild?.remove();
+      const row=document.createElement('div'); row.className=`log log-${type}`;
+      const meta=document.createElement('span'); meta.className='log-meta'; meta.textContent=`#${this.count}`;
+      row.append(meta,document.createTextNode(Utils.truncate((values||[]).map(Utils.toText).join(' '))));
+      this.consoleList.appendChild(row); this.consoleList.scrollTop=this.consoleList.scrollHeight;
+      this.consoleCount.textContent=`${this.count} ${this.count===1?'mensagem':'mensagens'}`;
+    }
+    onMessage(event) {
+      if (event.source !== this.frame.contentWindow) return;
+      const data=event.data;
+      if (!data || data.__purehtml!==true || data.channel!==this.channel || data.sequence!==this.sequence) return;
+      const type=data.type==='runtime-error'?'error':data.type==='ready'?'success':['warn','error','info'].includes(data.type)?data.type:'info';
+      this.log(type,Array.isArray(data.values)?data.values:[]);
+    }
+    instrument(source) {
+      const channel=JSON.stringify(this.channel), sequence=this.sequence;
+      const bridge=`<script>(function(){const C=${channel},S=${sequence},MAX=${MAX_CONSOLE_VALUE};let W=Date.now(),N=0,D=0;const cut=v=>{v=String(v??'');return v.length<=MAX?v:v.slice(0,MAX)+'… [truncado]'},send=(t,v)=>{const now=Date.now();if(now-W>1000){W=now;N=0;D=0}if(N>=200){if(D++===0)parent.postMessage({__purehtml:true,channel:C,sequence:S,type:'warn',values:['Console limitado a 200 mensagens/s para proteger a IDE.']},'*');return}N++;parent.postMessage({__purehtml:true,channel:C,sequence:S,type:t,values:v},'*')},norm=v=>{try{if(typeof v==='string')return cut(v);if(v instanceof Error)return cut(v.stack||v.message);return cut(JSON.stringify(v))}catch(e){return cut(v)}};['log','info','warn','error'].forEach(k=>{const old=console[k].bind(console);console[k]=(...a)=>{old(...a);send(k,a.map(norm))}});addEventListener('error',e=>send('runtime-error',[cut(e.message+' (linha '+e.lineno+', coluna '+e.colno+')')]));addEventListener('unhandledrejection',e=>send('runtime-error',['Promise rejeitada: '+norm(e.reason)]));addEventListener('DOMContentLoaded',()=>send('ready',['Preview carregado.']))})();<\/script>`;
+      const head=/<head\b[^>]*>/i.exec(source);
+      if (head) { const end=head.index+head[0].length; return source.slice(0,end)+bridge+source.slice(end); }
+      return bridge+source;
+    }
+    render(source) {
+      this.sequence++; this.clear();
+      try { this.frame.srcdoc=this.instrument(source); }
+      catch (error) { this.log('error',[`Falha ao renderizar preview: ${error.message}`]); }
+    }
+  }
+
+  class PureHTMLApp {
+    constructor() {
+      this.storage = new StorageEngine();
+      this.highlighter = new SyntaxHighlighter(els.highlight.querySelector('code'));
+      this.diagnostics = new Diagnostics();
+      this.preview = new PreviewBridge(els.frame, els.consoleList, els.consoleCount);
+      this.documentState = {id:'current', name:'meu-projeto.html', content:STARTER, createdAt:Date.now(), updatedAt:Date.now(), revision:0};
+      this.dirty = false;
+      this.fileHandle = null;
+      this.lastSnapshotAt = 0;
+      this.lastSnapshotContent = '';
+      this.searchMatches = [];
+      this.searchIndex = -1;
+      this.suggestions = [];
+      this.suggestionIndex = 0;
+      this.largeFileMode = false;
+      this.syntaxLiteMode = false;
+      this.syntaxSlowDisabled = false;
+      this.livePreview = true;
+      this.searchCaseSensitive = false;
+      this.searchWholeWord = false;
+      this.ui = {split:50, consoleHeight:165, fontSize:14, wrap:false, viewport:'fluid', consoleHidden:false, livePreview:true};
+      this.lastLineCount = 0;
+      this.previewDebounced = Utils.debounce(() => { if (this.livePreview && !this.largeFileMode && els.editor.value.length <= LARGE_FILE_THRESHOLD) this.preview.render(els.editor.value); }, PREVIEW_DELAY);
+      this.highlightDebounced = Utils.debounce(() => this.refreshHighlight(), HIGHLIGHT_DELAY);
+      this.autosaveDebounced = Utils.debounce(() => this.autosave(), AUTOSAVE_DELAY);
+      this.autosaveLargeDebounced = Utils.debounce(() => this.autosave(), LARGE_AUTOSAVE_DELAY);
+      this.toastTimer = 0;
+      this.drawerReturnFocus = null;
+      this.recoveredEmergency = false;
+    }
+
+    async init() {
+      this.bindUI();
+      this.restoreUISettings();
+      const mode = await this.storage.open();
+      const restored = await this.storage.getDocument();
+      const emergency = this.readEmergencyCopy();
+      const restoredProject = Utils.hasOngoingProject(restored) ? restored : null;
+      const emergencyProject = Utils.hasOngoingProject(emergency) ? emergency : null;
+      let loadedStarter = false;
+
+      if (emergencyProject && (!restoredProject || Number(emergencyProject.updatedAt || 0) > Number(restoredProject.updatedAt || 0))) {
+        this.documentState = {
+          id:'current', name:Utils.sanitizeFilename(emergencyProject.name), content:emergencyProject.content,
+          createdAt:Number(restoredProject?.createdAt) || Date.now(), updatedAt:Number(emergencyProject.updatedAt) || Date.now(),
+          revision:Math.max(Number(restoredProject?.revision) || 0, Number(emergencyProject.revision) || 0)
+        };
+        this.recoveredEmergency = true;
+      } else if (restoredProject) {
+        this.documentState = restoredProject;
+      } else {
+        this.documentState = {id:'current', name:'meu-projeto.html', content:STARTER, createdAt:Date.now(), updatedAt:Date.now(), revision:0};
+        loadedStarter = true;
+        if (emergency && !emergencyProject) this.clearEmergencyCopy(Date.now());
+      }
+
+      this.loadIntoEditor(this.documentState.content, this.documentState.name, {dirty:this.recoveredEmergency, render:true});
+      this.updateStorageStatus(mode);
+      this.updateNetworkStatus();
+      this.updateLiveButton();
+      await this.requestPersistentStorage();
+      await this.registerServiceWorker();
+      this.requestOutboxFlush();
+      this.scheduleAutoSnapshot();
+      els.readyState.textContent = `● Pronto · v${APP_VERSION}`;
+      if (this.recoveredEmergency) {
+        this.showToast('Uma edição mais recente foi recuperada após a sessão anterior ser interrompida.', 'success', 6500);
+        this.autosaveDebounced();
+      } else if (loadedStarter) {
+        this.showToast('Nenhum projeto em andamento. Um HTML básico foi carregado para começar.', 'success', 4200);
+      }
+    }
+
+    bindUI() {
+      els.editor.addEventListener('input', () => this.onEditorInput());
+      els.editor.addEventListener('scroll', () => this.syncScroll());
+      els.editor.addEventListener('select', () => this.updateMeta());
+      els.editor.addEventListener('click', () => { this.updateMeta(); this.hideSuggestions(); });
+      els.editor.addEventListener('keyup', event => {
+        this.updateMeta();
+        if (!['ArrowUp','ArrowDown','Enter','Tab','Escape'].includes(event.key)) this.showSuggestions(false);
+      });
+      els.editor.addEventListener('keydown', event => this.onEditorKeydown(event));
+
+      $('newBtn').addEventListener('click', () => this.newDocument());
+      $('openBtn').addEventListener('click', () => this.openFromPicker());
+      $('saveBtn').addEventListener('click', () => this.saveFile());
+      $('saveAsBtn').addEventListener('click', () => this.saveFile({forcePicker:true}));
+      $('undoBtn').addEventListener('click', () => { document.execCommand('undo'); els.editor.dispatchEvent(new Event('input')); });
+      $('redoBtn').addEventListener('click', () => { document.execCommand('redo'); els.editor.dispatchEvent(new Event('input')); });
+      $('findBtn').addEventListener('click', () => this.openDrawer('searchDrawer'));
+      $('gotoBtn').addEventListener('click', () => this.openGoto());
+      $('diagBtn').addEventListener('click', () => { this.openDrawer('diagDrawer'); this.runDiagnostics(); });
+      $('historyBtn').addEventListener('click', () => { this.openDrawer('historyDrawer'); this.refreshHistory(); });
+      $('aboutBtn').addEventListener('click', () => this.openDrawer('aboutDrawer'));
+      $('snapshotBtn').addEventListener('click', async () => { await this.createSnapshot('manual'); await this.refreshHistory(); });
+      $('formatBtn').addEventListener('click', () => this.formatDocument());
+      $('commentBtn').addEventListener('click', () => this.toggleComment());
+      $('wrapBtn').addEventListener('click', () => this.toggleWrap());
+      $('zoomOutBtn').addEventListener('click', () => this.changeEditorZoom(-1));
+      $('zoomInBtn').addEventListener('click', () => this.changeEditorZoom(1));
+      $('focusBtn').addEventListener('click', () => this.toggleEditorFocus());
+      $('refreshBtn').addEventListener('click', () => this.preview.render(els.editor.value));
+      $('liveBtn').addEventListener('click', () => this.toggleLivePreview());
+      $('consoleBtn').addEventListener('click', () => {
+        const hidden = document.body.classList.toggle('console-hidden');
+        $('consoleBtn').setAttribute('aria-pressed', String(!hidden));
+        this.saveUISettings();
+      });
+      $('fullBtn').addEventListener('click', () => this.toggleFullscreenPreview());
+      $('clearConsole').addEventListener('click', () => this.preview.clear());
+      $('runDiagBtn').addEventListener('click', () => this.runDiagnostics());
+      $('viewport').addEventListener('change', event => { this.setViewport(event.target.value); this.ui.viewport = event.target.value; this.saveUISettings(); });
+      $('caseBtn').addEventListener('click', () => { this.searchCaseSensitive = !this.searchCaseSensitive; this.updateSearchOptionButtons(); this.find(1,true); });
+      $('wordBtn').addEventListener('click', () => { this.searchWholeWord = !this.searchWholeWord; this.updateSearchOptionButtons(); this.find(1,true); });
+      $('gotoConfirmBtn').addEventListener('click', () => this.goToLine($('gotoInput').value));
+      $('gotoInput').addEventListener('keydown', event => { if (event.key === 'Enter') this.goToLine(event.currentTarget.value); });
+      els.projectName.addEventListener('change', () => this.updateProjectName());
+      els.projectName.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); this.updateProjectName(); els.editor.focus(); } });
+      this.bindResizers();
+      this.bindFileDrop();
+
+      els.fileInput.addEventListener('change', async () => {
+        const file = els.fileInput.files?.[0];
+        if (file) await this.openFile(file);
+        els.fileInput.value = '';
+      });
+
+      document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => this.closeDrawer(button.dataset.close)));
+      $('findInput').addEventListener('input', () => this.find(1, true));
+      $('nextBtn').addEventListener('click', () => this.find(1));
+      $('prevBtn').addEventListener('click', () => this.find(-1));
+      $('replaceBtn').addEventListener('click', () => this.replaceCurrent());
+      $('replaceAllBtn').addEventListener('click', () => this.replaceAll());
+      els.diagList.addEventListener('click', event => this.onDiagnosticClick(event));
+      els.historyList.addEventListener('click', event => this.onHistoryClick(event));
+      els.suggestions.addEventListener('mousedown', event => {
+        const item = event.target.closest('[data-index]');
+        if (!item) return;
+        event.preventDefault();
+        this.acceptSuggestion(this.suggestions[Number(item.dataset.index)]);
+      });
+
+      window.addEventListener('keydown', event => {
+        if (event.defaultPrevented) return;
+        if (event.key === 'Escape') {
+          const openDrawer = [els.gotoDrawer, els.searchDrawer, els.diagDrawer, els.historyDrawer, els.aboutDrawer].find(drawer => !drawer.hidden);
+          if (openDrawer) { event.preventDefault(); this.closeDrawer(openDrawer.id); return; }
+          if (document.body.classList.contains('fullscreen-preview')) { event.preventDefault(); this.toggleFullscreenPreview(); els.editor.focus(); return; }
+          if (document.body.classList.contains('focus-editor')) { event.preventDefault(); this.toggleEditorFocus(); return; }
+        }
+        const mod = event.ctrlKey || event.metaKey;
+        if (mod && event.key.toLowerCase() === 's' && event.shiftKey) { event.preventDefault(); this.saveFile({forcePicker:true}); return; }
+        if (mod && event.key.toLowerCase() === 's') { event.preventDefault(); this.saveFile(); return; }
+        if (mod && event.key.toLowerCase() === 'o') { event.preventDefault(); this.openFromPicker(); return; }
+        if (mod && event.key.toLowerCase() === 'f') { event.preventDefault(); this.openDrawer('searchDrawer'); return; }
+        if (mod && event.key.toLowerCase() === 'g') { event.preventDefault(); this.openGoto(); return; }
+        if (mod && event.key === '0') { event.preventDefault(); this.setEditorFontSize(14); return; }
+        if (mod && (event.key === '+' || event.key === '=')) { event.preventDefault(); this.changeEditorZoom(1); return; }
+        if (mod && event.key === '-') { event.preventDefault(); this.changeEditorZoom(-1); return; }
+        if (event.key === 'F8') { event.preventDefault(); this.preview.render(els.editor.value); }
+      });
+      window.addEventListener('online', () => { this.updateNetworkStatus(); this.requestOutboxFlush(); });
+      window.addEventListener('offline', () => this.updateNetworkStatus());
+      window.addEventListener('beforeunload', event => {
+        if (!this.dirty) return;
+        this.writeEmergencyCopy();
+        event.preventDefault();
+        event.returnValue = '';
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && this.dirty) { this.writeEmergencyCopy(); this.autosave(); }
+      });
+      window.addEventListener('pagehide', () => { if (this.dirty) { this.writeEmergencyCopy(); this.autosave(); } });
+      window.addEventListener('error', event => {
+        if (event.filename && !String(event.filename).includes('app.js')) return;
+        els.readyState.textContent = `● Recuperável · v${APP_VERSION}`;
+      });
+      window.addEventListener('unhandledrejection', () => { els.readyState.textContent = `● Recuperável · v${APP_VERSION}`; });
+    }
+
+    onEditorInput() {
+      this.setDirty(true);
+      this.documentState.content=els.editor.value;
+      this.documentState.revision=(this.documentState.revision||0)+1;
+      this.updatePerformanceModes();
+      this.updateMeta();
+      if (!this.largeFileMode && !this.syntaxLiteMode) {
+        document.body.classList.remove('syntax-ready');
+        this.highlightDebounced();
+      }
+      if (this.livePreview && !this.largeFileMode) this.previewDebounced();
+      (this.largeFileMode ? this.autosaveLargeDebounced : this.autosaveDebounced)();
+      if (!this.largeFileMode) this.showSuggestions(false);
+    }
+
+    updatePerformanceModes() {
+      const length = els.editor.value.length;
+      if (this.syntaxSlowDisabled && length <= HIGHLIGHT_RECOVERY_LIMIT) this.syntaxSlowDisabled = false;
+      const syntaxNext = length > HIGHLIGHT_HARD_LIMIT || this.syntaxSlowDisabled;
+      if (syntaxNext !== this.syntaxLiteMode) {
+        this.syntaxLiteMode = syntaxNext;
+        document.body.classList.toggle('syntax-lite-mode', syntaxNext);
+        if (syntaxNext) {
+          document.body.classList.remove('syntax-ready');
+          this.hideSuggestions();
+        } else {
+          document.body.classList.remove('syntax-ready');
+          this.highlightDebounced();
+        }
+      }
+
+      const next=length>LARGE_FILE_THRESHOLD;
+      if (next===this.largeFileMode) { this.updateLiveButton(); return; }
+      this.largeFileMode=next;
+      document.body.classList.toggle('large-file-mode',next);
+      if (next) {
+        document.body.classList.remove('syntax-ready'); this.hideSuggestions();
+        this.showToast('Modo arquivo grande ativado: cores, linha/coluna em tempo real e preview automático foram pausados para manter o editor responsivo.','',6500);
+      } else if (this.livePreview) {
+        this.preview.render(els.editor.value);
+      }
+      this.updateLiveButton();
+    }
+
+    refreshHighlight() {
+      if (this.largeFileMode || this.syntaxLiteMode || els.editor.value.length > HIGHLIGHT_HARD_LIMIT) {
+        document.body.classList.remove('syntax-ready');
+        this.syncScroll();
+        return;
+      }
+      try {
+        const started = performance.now();
+        this.highlighter.render(els.editor.value);
+        const elapsed = performance.now() - started;
+        if (elapsed > HIGHLIGHT_SLOW_MS && els.editor.value.length > HIGHLIGHT_RECOVERY_LIMIT) {
+          this.syntaxSlowDisabled = true;
+          this.syntaxLiteMode = true;
+          document.body.classList.add('syntax-lite-mode');
+          document.body.classList.remove('syntax-ready');
+          this.showToast('Cores de sintaxe pausadas automaticamente porque este documento ficou pesado para destacar. O código continua totalmente editável.', '', 5200);
+        } else {
+          document.body.classList.add('syntax-ready');
+        }
+      } catch (error) {
+        document.body.classList.remove('syntax-ready');
+        this.showToast(`Destaque de sintaxe desativado com segurança: ${error.message}`, 'error', 5000);
+      }
+      this.syncScroll();
+    }
+
+    syncScroll() {
+      els.lineNums.scrollTop = els.editor.scrollTop;
+      els.highlight.scrollTop = els.editor.scrollTop;
+      els.highlight.scrollLeft = els.editor.scrollLeft;
+    }
+
+    updateMeta() {
+      const position=els.editor.selectionStart, source=els.editor.value;
+      const selected = Math.abs(els.editor.selectionEnd - els.editor.selectionStart);
+      els.chars.textContent=`${source.length.toLocaleString('pt-BR')} caracteres`;
+      els.selectionState.textContent = selected ? `${selected.toLocaleString('pt-BR')} selecionados` : 'Sem seleção';
+      if (this.largeFileMode) {
+        els.cursor.textContent=`Pos ${position.toLocaleString('pt-BR')}`;
+        els.context.textContent='Arquivo grande';
+        els.lineNums.textContent=''; els.tagMatch.hidden=true; this.lastLineCount=0;
+        return;
+      }
+      const lc=Utils.lineAndColumn(source,position);
+      els.cursor.textContent=`Ln ${lc.line}, Col ${lc.column}`;
+      els.context.textContent=this.getContext(position);
+      this.updateLineNumbers(source);
+      this.updateTagMatch();
+    }
+
+    updateLineNumbers(source = els.editor.value, force = false) {
+      let count=1; for (let i=0;i<source.length;i++) if (source.charCodeAt(i)===10) count++;
+      if (!force && count === this.lastLineCount) return;
+      this.lastLineCount = count;
+      let numbers=''; for (let i=1;i<=count;i++) numbers+=`${i}${i===count?'':'\n'}`;
+      els.lineNums.textContent=numbers;
+    }
+
+    getContext(position = els.editor.selectionStart) {
+      const src = els.editor.value.slice(0, position).toLowerCase();
+      const scriptOpen = src.lastIndexOf('<script'), scriptClose = src.lastIndexOf('<\/script>');
+      if (scriptOpen > scriptClose) return 'JavaScript';
+      const styleOpen = src.lastIndexOf('<style'), styleClose = src.lastIndexOf('</style>');
+      if (styleOpen > styleClose) return 'CSS';
+      return 'HTML';
+    }
+
+    updateTagMatch() {
+      els.tagMatch.hidden = true;
+      const pos = els.editor.selectionStart, src = els.editor.value, before = src.slice(0,pos);
+      const match = before.match(/<\/?([A-Za-z][\w:-]*)[^<>]*>?$/);
+      if (!match) return;
+      const tag = match[1], start = before.lastIndexOf('<');
+      if (start < 0 || VOID_TAGS.has(tag.toLowerCase())) return;
+      const opening = src[start+1] !== '/', lower = src.toLowerCase();
+      const other = opening ? lower.indexOf(`</${tag.toLowerCase()}>`, pos) : lower.lastIndexOf(`<${tag.toLowerCase()}`, start-1);
+      if (other < 0) return;
+      const line = Utils.lineFromIndex(src, other);
+      els.tagMatch.textContent = `${opening ? 'fecha' : 'abre'} <${tag}> na linha ${line}`;
+      els.tagMatch.hidden = false;
+    }
+
+    setDirty(value) {
+      this.dirty = Boolean(value);
+      els.dirty.hidden = !this.dirty;
+    }
+
+    loadIntoEditor(content, name, options = {}) {
+      this.documentState = {
+        id:'current', name:Utils.sanitizeFilename(name), content:String(content || ''),
+        createdAt:this.documentState.createdAt || Date.now(), updatedAt:Date.now(), revision:this.documentState.revision || 0
+      };
+      els.editor.value = this.documentState.content;
+      els.projectName.value = this.documentState.name;
+      this.lastLineCount = 0;
+      this.syntaxSlowDisabled = false;
+      this.syntaxLiteMode = false;
+      document.body.classList.remove('syntax-lite-mode','syntax-ready');
+      this.setDirty(Boolean(options.dirty));
+      this.updatePerformanceModes();
+      this.updateMeta();
+      if (!this.largeFileMode && !this.syntaxLiteMode) this.highlightDebounced();
+      if (options.render !== false) this.preview.render(els.editor.value);
+      els.editor.focus();
+    }
+
+    readEmergencyCopy() {
+      try {
+        const item = Utils.safeJSONParse(localStorage.getItem(EMERGENCY_KEY), null);
+        return item && typeof item.content === 'string' ? item : null;
+      } catch { return null; }
+    }
+
+    writeEmergencyCopy() {
+      const content = els.editor.value;
+      if (!this.dirty || content.length > EMERGENCY_MAX_CHARS) return false;
+      try {
+        localStorage.setItem(EMERGENCY_KEY, JSON.stringify({
+          name:Utils.sanitizeFilename(this.documentState.name), content,
+          revision:Number(this.documentState.revision) || 0, updatedAt:Date.now()
+        }));
+        return true;
+      } catch { return false; }
+    }
+
+    clearEmergencyCopy(savedAt = Date.now()) {
+      try {
+        const item = this.readEmergencyCopy();
+        if (!item || Number(item.updatedAt || 0) <= Number(savedAt || 0)) localStorage.removeItem(EMERGENCY_KEY);
+      } catch { /* contingência opcional */ }
+    }
+
+    async autosave() {
+      const revisionAtStart=this.documentState.revision||0, contentAtStart=els.editor.value;
+      const saveState={...this.documentState,content:contentAtStart,revision:revisionAtStart};
+      els.autosaveState.textContent='Salvando localmente…';
+      try {
+        const saved=await this.storage.saveDocument(saveState);
+        if ((this.documentState.revision||0)===revisionAtStart && els.editor.value===contentAtStart) {
+          this.documentState={...this.documentState,...saved,content:contentAtStart,revision:revisionAtStart};
+          if (this.storage.isPersistent()) {
+            this.setDirty(false);
+            this.clearEmergencyCopy(saved.updatedAt);
+            els.autosaveState.textContent=`Salvo localmente · ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+          } else {
+            this.setDirty(true); els.autosaveState.textContent='Somente memória · exporte uma cópia';
+          }
+        } else {
+          els.autosaveState.textContent='Nova edição detectada · salvando novamente'; this.autosaveDebounced();
+        }
+        this.updateStorageStatus(this.storage.mode);
+      } catch (error) {
+        this.setDirty(true); els.autosaveState.textContent='Falha no autosave';
+        this.showToast('Não foi possível persistir localmente. Exporte o HTML para garantir uma cópia.','error',7000);
+      }
+    }
+
+    async createSnapshot(reason = 'manual') {
+      const content = els.editor.value;
+      if (reason === 'automático' && (content === this.lastSnapshotContent || this.largeFileMode)) return false;
+      if (content.length > MAX_SINGLE_SNAPSHOT_CHARS) {
+        if (reason === 'manual') this.showToast('Snapshot não criado: o documento é grande demais para o histórico automático. O autosave principal continua ativo.', 'error', 5200);
+        return false;
+      }
+      try {
+        const result = await this.storage.addSnapshot({name:this.documentState.name, content, reason});
+        if (!result?.saved) {
+          if (reason === 'manual') this.showToast('Snapshot não pôde ser persistido; o autosave principal continua ativo.', 'error', 4200);
+          return false;
+        }
+        this.lastSnapshotAt = Date.now();
+        this.lastSnapshotContent = content;
+        if (reason === 'manual') this.showToast(this.storage.isPersistent() ? 'Snapshot local criado.' : 'Snapshot temporário criado nesta sessão.', 'success');
+        return true;
+      } catch (error) {
+        if (reason === 'manual') this.showToast('Snapshot não pôde ser criado; o autosave principal continua ativo.', 'error');
+        return false;
+      }
+    }
+
+    scheduleAutoSnapshot() {
+      setInterval(() => {
+        if (!this.largeFileMode && els.editor.value && Date.now() - this.lastSnapshotAt >= AUTO_SNAPSHOT_INTERVAL) this.createSnapshot('automático');
+      }, 60000);
+    }
+
+    async newDocument() {
+      await this.createSnapshot('antes de novo documento');
+      this.fileHandle = null;
+      this.documentState = {id:'current', name:'meu-projeto.html', content:STARTER, createdAt:Date.now(), updatedAt:Date.now(), revision:0};
+      this.loadIntoEditor(STARTER, 'meu-projeto.html', {dirty:true});
+      await this.autosave();
+      this.showToast('Novo documento criado. O anterior ficou no histórico.', 'success');
+    }
+
+    async openFromPicker() {
+      if ('showOpenFilePicker' in window && window.isSecureContext) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            multiple:false,
+            types:[{description:'Documento HTML', accept:{'text/html':['.html','.htm']}}]
+          });
+          const file = await handle.getFile();
+          await this.openFile(file, handle);
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          this.showToast('O seletor avançado não pôde ser usado; abrindo o seletor padrão.', 'error', 4200);
+        }
+      }
+      els.fileInput.click();
+    }
+
+    async openFile(file, handle = null) {
+      if (!file || !/\.html?$/i.test(file.name || '')) {
+        this.showToast('Escolha um arquivo .html ou .htm válido.', 'error');
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        this.showToast('Arquivo muito grande para edição segura no navegador (limite recomendado: 25 MB).', 'error');
+        return;
+      }
+      await this.createSnapshot('antes de abrir arquivo');
+      try {
+        const text = await file.text();
+        this.fileHandle = handle;
+        this.documentState = {id:'current', name:Utils.sanitizeFilename(file.name), content:text, createdAt:Date.now(), updatedAt:Date.now(), revision:0};
+        this.loadIntoEditor(text, file.name, {dirty:true});
+        await this.autosave();
+        this.showToast(`${file.name} aberto com sucesso.`, 'success');
+      } catch (error) {
+        this.showToast(`Falha ao abrir arquivo: ${error.message}`, 'error');
+      }
+    }
+
+    async saveFile(options = {}) {
+      await this.createSnapshot('antes de salvar arquivo');
+      this.updateProjectName(false);
+      const content = els.editor.value, suggestedName = Utils.sanitizeFilename(this.documentState.name);
+      if (options.forcePicker) this.fileHandle = null;
+      if ('showSaveFilePicker' in window && window.isSecureContext) {
+        try {
+          if (!this.fileHandle) {
+            this.fileHandle = await window.showSaveFilePicker({
+              suggestedName,
+              types:[{description:'Documento HTML', accept:{'text/html':['.html','.htm']}}]
+            });
+          }
+          const writable = await this.fileHandle.createWritable();
+          await writable.write(content);
+          await writable.close();
+          this.documentState.name = this.fileHandle.name || suggestedName;
+          await this.autosave();
+          this.showToast('Arquivo HTML salvo.', 'success');
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+          this.fileHandle = null;
+        }
+      }
+      const blob = new Blob([content], {type:'text/html;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = suggestedName; anchor.rel = 'noopener';
+      document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      await this.autosave();
+      this.showToast('HTML exportado.', 'success');
+    }
+
+    formatDocument() {
+      const before = els.editor.value;
+      const after = before.split('\n').map(line => line.replace(/[ \t]+$/g, '')).join('\n').replace(/\n{4,}/g, '\n\n\n');
+      if (after === before) { this.showToast('O documento já está limpo.', 'success'); return; }
+      els.editor.value = after;
+      els.editor.dispatchEvent(new Event('input'));
+      this.showToast('Espaços finais e excesso de linhas vazias removidos.', 'success');
+    }
+
+    onEditorKeydown(event) {
+      const mod = event.ctrlKey || event.metaKey;
+      if (mod && event.key === '/') { event.preventDefault(); this.toggleComment(); return; }
+      if (mod && event.shiftKey && event.key.toLowerCase() === 'd') { event.preventDefault(); this.duplicateSelectionOrLine(); return; }
+      if (mod && event.code === 'Space') { event.preventDefault(); this.showSuggestions(true); return; }
+      if (!els.suggestions.hidden && this.suggestions.length) {
+        if (event.key === 'ArrowDown') { event.preventDefault(); this.suggestionIndex = (this.suggestionIndex + 1) % this.suggestions.length; this.renderSuggestions(); return; }
+        if (event.key === 'ArrowUp') { event.preventDefault(); this.suggestionIndex = (this.suggestionIndex - 1 + this.suggestions.length) % this.suggestions.length; this.renderSuggestions(); return; }
+        if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); this.acceptSuggestion(this.suggestions[this.suggestionIndex]); return; }
+        if (event.key === 'Escape') { event.preventDefault(); this.hideSuggestions(); return; }
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        if (event.shiftKey) { this.outdentSelection(); return; }
+        const start = els.editor.selectionStart, end = els.editor.selectionEnd;
+        if (start !== end) {
+          const blockStart = els.editor.value.lastIndexOf('\n', start - 1) + 1;
+          const blockEndBreak = els.editor.value.indexOf('\n', end);
+          const blockEnd = blockEndBreak < 0 ? els.editor.value.length : blockEndBreak;
+          const block = els.editor.value.slice(blockStart, blockEnd);
+          const replaced = block.split('\n').map(line => `  ${line}`).join('\n');
+          els.editor.setRangeText(replaced, blockStart, blockEnd, 'select');
+          els.editor.dispatchEvent(new Event('input'));
+        } else this.insertText('  ');
+        return;
+      }
+      if (event.key === '>' && this.getContext() === 'HTML') {
+        const pos = els.editor.selectionStart, before = els.editor.value.slice(0,pos);
+        const match = before.match(/<([A-Za-z][\w:-]*)(?:\s[^<>]*)?$/);
+        if (match && !VOID_TAGS.has(match[1].toLowerCase())) {
+          event.preventDefault();
+          const tag = match[1];
+          this.insertText(`></${tag}>`, pos, pos, 1);
+          return;
+        }
+      }
+      if (event.key === 'Enter') {
+        const pos = els.editor.selectionStart, before = els.editor.value.slice(0,pos), after = els.editor.value.slice(pos);
+        const open = before.match(/<([A-Za-z][\w:-]*)[^>]*>$/), close = after.match(/^<\/([A-Za-z][\w:-]*)>/);
+        if (open && close && open[1].toLowerCase() === close[1].toLowerCase()) {
+          event.preventDefault(); this.insertText('\n  \n', pos, pos, 3); return;
+        }
+        const line = before.split('\n').pop(), indent = (line.match(/^\s*/) || [''])[0];
+        if (/[{[]\s*$/.test(line)) { event.preventDefault(); this.insertText(`\n${indent}  `, pos, pos); return; }
+      }
+      if (['(', '[', '{'].includes(event.key) && els.editor.selectionStart === els.editor.selectionEnd) {
+        const pairs = {'(':')','[':']','{':'}'};
+        event.preventDefault();
+        const pos = els.editor.selectionStart;
+        els.editor.setRangeText(event.key + pairs[event.key], pos, pos, 'end');
+        els.editor.selectionStart = els.editor.selectionEnd = pos + 1;
+        els.editor.dispatchEvent(new Event('input'));
+        return;
+      }
+      if ([')',']','}'].includes(event.key) && els.editor.selectionStart === els.editor.selectionEnd && els.editor.value[els.editor.selectionStart] === event.key) {
+        event.preventDefault();
+        els.editor.selectionStart = els.editor.selectionEnd = els.editor.selectionStart + 1;
+        return;
+      }
+      if ((event.key === '"' || event.key === "'") && els.editor.selectionStart === els.editor.selectionEnd) {
+        const pos = els.editor.selectionStart;
+        if (els.editor.value[pos] === event.key) { event.preventDefault(); els.editor.selectionStart = els.editor.selectionEnd = pos + 1; return; }
+        event.preventDefault();
+        els.editor.setRangeText(event.key + event.key, pos, pos, 'end');
+        els.editor.selectionStart = els.editor.selectionEnd = pos + 1;
+        els.editor.dispatchEvent(new Event('input'));
+      }
+    }
+
+    outdentSelection() {
+      const source = els.editor.value, start = els.editor.selectionStart, end = els.editor.selectionEnd;
+      const blockStart = source.lastIndexOf('\n', Math.max(0,start-1)) + 1;
+      const blockEndBreak = source.indexOf('\n', end), blockEnd = blockEndBreak < 0 ? source.length : blockEndBreak;
+      const block = source.slice(blockStart, blockEnd);
+      let removedBeforeStart = 0, removedTotal = 0, cursor = blockStart;
+      const lines = block.split('\n');
+      const replaced = lines.map((line,index) => {
+        const match = line.match(/^( {1,2}|\t)/); const count = match ? match[0].length : 0;
+        if (cursor < start) removedBeforeStart += Math.min(count, Math.max(0,start-cursor));
+        removedTotal += count; cursor += line.length + 1;
+        return count ? line.slice(count) : line;
+      }).join('\n');
+      if (!removedTotal) return;
+      els.editor.setRangeText(replaced, blockStart, blockEnd, 'select');
+      const newStart = Math.max(blockStart, start - removedBeforeStart);
+      const newEnd = Math.max(newStart, end - removedTotal);
+      els.editor.setSelectionRange(newStart, newEnd);
+      els.editor.dispatchEvent(new Event('input'));
+    }
+
+    duplicateSelectionOrLine() {
+      const source = els.editor.value, start = els.editor.selectionStart, end = els.editor.selectionEnd;
+      if (start !== end) {
+        const selected = source.slice(start,end);
+        els.editor.setRangeText(selected, end, end, 'end');
+        els.editor.setSelectionRange(end, end + selected.length);
+      } else {
+        const lineStart = source.lastIndexOf('\n', Math.max(0,start-1)) + 1;
+        const nextBreak = source.indexOf('\n', start);
+        const lineEnd = nextBreak < 0 ? source.length : nextBreak;
+        const line = source.slice(lineStart,lineEnd);
+        const prefix = nextBreak < 0 ? '\n' : '';
+        const insertion = prefix + line + (nextBreak < 0 ? '' : '\n');
+        const insertAt = nextBreak < 0 ? lineEnd : lineEnd + 1;
+        els.editor.setRangeText(insertion, insertAt, insertAt, 'end');
+        const offset = line.length + 1;
+        els.editor.setSelectionRange(Math.min(source.length + insertion.length, start + offset), Math.min(source.length + insertion.length, start + offset));
+      }
+      els.editor.dispatchEvent(new Event('input'));
+    }
+
+    toggleComment() {
+      const source = els.editor.value, start = els.editor.selectionStart, end = els.editor.selectionEnd;
+      const context = this.getContext(start);
+      let a = start, b = end;
+      if (a === b) { a = source.lastIndexOf('\n', Math.max(0,a-1)) + 1; const next = source.indexOf('\n', b); b = next < 0 ? source.length : next; }
+      const text = source.slice(a,b);
+      let replacement;
+      if (context === 'HTML') {
+        const trimmed = text.trim();
+        if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) {
+          const lead = text.indexOf(trimmed), tail = text.length - lead - trimmed.length;
+          replacement = text.slice(0,lead) + trimmed.slice(4,-3).replace(/^\s|\s$/g,'') + text.slice(text.length-tail);
+        } else replacement = `<!-- ${text} -->`;
+      } else if (context === 'JavaScript' && !text.includes('\n')) {
+        const indent = text.match(/^\s*/)?.[0] || '', body = text.slice(indent.length);
+        replacement = body.startsWith('// ') ? indent + body.slice(3) : body.startsWith('//') ? indent + body.slice(2) : `${indent}// ${body}`;
+      } else {
+        const trimmed = text.trim(), lead = text.indexOf(trimmed), tail = text.length - lead - trimmed.length;
+        if (trimmed.startsWith('/*') && trimmed.endsWith('*/')) replacement = text.slice(0,lead) + trimmed.slice(2,-2).replace(/^\s|\s$/g,'') + text.slice(text.length-tail);
+        else replacement = `/* ${text} */`;
+      }
+      els.editor.setRangeText(replacement,a,b,'select');
+      els.editor.dispatchEvent(new Event('input'));
+    }
+
+    insertText(text, start = els.editor.selectionStart, end = els.editor.selectionEnd, caretOffset = null) {
+      els.editor.setRangeText(text, start, end, 'end');
+      if (caretOffset !== null) els.editor.selectionStart = els.editor.selectionEnd = start + caretOffset;
+      els.editor.dispatchEvent(new Event('input'));
+    }
+
+    buildSuggestions(force = false) {
+      if (this.largeFileMode) return [];
+      const pos = els.editor.selectionStart, before = els.editor.value.slice(0,pos), context = this.getContext(pos);
+      let result = [];
+      if (context === 'HTML') {
+        const tag = before.match(/<([A-Za-z][\w:-]*)$/);
+        const value = before.match(/\b([A-Za-z_:][\w:.-]*)\s*=\s*["']([^"']*)$/);
+        const attr = before.match(/<([A-Za-z][\w:-]*)\s+[^<>]*?([A-Za-z_:][\w:.-]*)?$/);
+        if (tag) {
+          const q = tag[1].toLowerCase();
+          result = TAGS.filter(x => force || x.startsWith(q)).slice(0,12).map(value => ({kind:'tag', value, label:`<${value}>`}));
+        } else if (value && ATTR_VALUES[value[1]]) {
+          const q = value[2].toLowerCase();
+          result = ATTR_VALUES[value[1]].filter(x => force || x.startsWith(q)).map(value => ({kind:'value', value, label:value}));
+        } else if (attr) {
+          const q = (attr[2] || '').toLowerCase();
+          result = ATTRS.filter(x => force || x.startsWith(q)).slice(0,12).map(value => ({kind:'attr', value, label:value}));
+        }
+      } else if (context === 'CSS') {
+        const q = (before.match(/([A-Za-z-]+)$/) || ['',''])[1].toLowerCase();
+        result = CSS_PROPS.filter(x => force || x.startsWith(q)).slice(0,12).map(value => ({kind:'css', value, label:value}));
+      } else {
+        const q = (before.match(/([\w$]+)$/) || ['',''])[1].toLowerCase();
+        result = JS_WORDS.filter(x => force || x.toLowerCase().startsWith(q)).slice(0,12).map(value => ({kind:'js', value, label:value}));
+      }
+      return result;
+    }
+
+    showSuggestions(force) {
+      this.suggestions = this.buildSuggestions(force);
+      this.suggestionIndex = 0;
+      if (!this.suggestions.length) { this.hideSuggestions(); return; }
+      this.renderSuggestions();
+      const rect = els.editor.getBoundingClientRect();
+      els.suggestions.style.left = `${Math.min(rect.left + 120, innerWidth - 410)}px`;
+      els.suggestions.style.top = `${Math.min(rect.top + 62, innerHeight - 320)}px`;
+      els.suggestions.hidden = false;
+    }
+
+    renderSuggestions() {
+      els.suggestions.replaceChildren(...this.suggestions.map((item,index) => {
+        const row = document.createElement('div'); row.className = `suggestion${index === this.suggestionIndex ? ' active' : ''}`; row.dataset.index = String(index); row.setAttribute('role','option'); row.setAttribute('aria-selected',String(index === this.suggestionIndex));
+        const label = document.createElement('span'); label.textContent = item.label;
+        const kind = document.createElement('small'); kind.textContent = item.kind;
+        row.append(label, kind); return row;
+      }));
+    }
+
+    hideSuggestions() { els.suggestions.hidden = true; this.suggestions = []; }
+
+    acceptSuggestion(item) {
+      if (!item) return;
+      const pos = els.editor.selectionStart, before = els.editor.value.slice(0,pos);
+      if (item.kind === 'tag') {
+        const match = before.match(/<([A-Za-z][\w:-]*)$/); if (!match) return;
+        const start = pos - match[0].length;
+        const text = VOID_TAGS.has(item.value) ? `<${item.value}>` : `<${item.value}></${item.value}>`;
+        els.editor.setRangeText(text, start, pos, 'end');
+        if (!VOID_TAGS.has(item.value)) els.editor.selectionStart = els.editor.selectionEnd = start + item.value.length + 2;
+      } else if (item.kind === 'attr') {
+        const match = before.match(/([A-Za-z_:][\w:.-]*)?$/), start = pos - (match?.[0]?.length || 0);
+        const booleanAttrs = new Set(['hidden','checked','selected','disabled','required']);
+        const text = booleanAttrs.has(item.value) ? item.value : `${item.value}=""`;
+        els.editor.setRangeText(text, start, pos, 'end');
+        if (!booleanAttrs.has(item.value)) els.editor.selectionStart = els.editor.selectionEnd = start + item.value.length + 2;
+      } else if (item.kind === 'value') {
+        const match = before.match(/([^"']*)$/), start = pos - (match?.[0]?.length || 0);
+        els.editor.setRangeText(item.value, start, pos, 'end');
+      } else {
+        const match = before.match(item.kind === 'css' ? /([A-Za-z-]+)$/ : /([\w$]+)$/), start = pos - (match?.[0]?.length || 0);
+        els.editor.setRangeText(item.kind === 'css' ? `${item.value}: ` : item.value, start, pos, 'end');
+      }
+      this.hideSuggestions();
+      els.editor.dispatchEvent(new Event('input'));
+    }
+
+    openDrawer(id) {
+      this.drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : els.editor;
+      this.hideSuggestions();
+      [els.searchDrawer, els.diagDrawer, els.historyDrawer, els.gotoDrawer, els.aboutDrawer].forEach(drawer => drawer.hidden = drawer.id !== id);
+      if (id === 'searchDrawer') $('findInput').focus();
+      else requestAnimationFrame(() => $(id)?.querySelector('button,input,select,a,[tabindex]')?.focus());
+    }
+
+    closeDrawer(id) {
+      $(id).hidden = true;
+      const target = this.drawerReturnFocus;
+      this.drawerReturnFocus = null;
+      if (target?.isConnected && typeof target.focus === 'function') target.focus();
+    }
+
+    find(direction = 1, reset = false) {
+      const query = $('findInput').value;
+      if (!query) { this.searchMatches = []; this.searchIndex = -1; els.searchMeta.textContent='0 resultados'; return; }
+      const source = els.editor.value;
+      const haystack = this.searchCaseSensitive ? source : source.toLowerCase();
+      const needle = this.searchCaseSensitive ? query : query.toLowerCase();
+      this.searchMatches = [];
+      let index = 0;
+      while ((index = haystack.indexOf(needle, index)) !== -1) {
+        const before = source[index-1], after = source[index+query.length];
+        if (!this.searchWholeWord || (!Utils.isWordChar(before) && !Utils.isWordChar(after))) this.searchMatches.push(index);
+        index += Math.max(1, needle.length);
+      }
+      if (!this.searchMatches.length) { this.searchIndex=-1; els.searchMeta.textContent='0 resultados'; return; }
+      const current = els.editor.selectionStart;
+      if (reset) this.searchIndex = -1;
+      if (direction > 0) {
+        const next = this.searchMatches.findIndex(pos => pos > current);
+        this.searchIndex = next >= 0 ? next : 0;
+      } else {
+        this.searchIndex = this.searchMatches.length - 1;
+        for (let i = this.searchMatches.length - 1; i >= 0; i--) if (this.searchMatches[i] < current) { this.searchIndex = i; break; }
+      }
+      const pos = this.searchMatches[this.searchIndex];
+      els.editor.focus(); els.editor.setSelectionRange(pos, pos + query.length); this.updateMeta();
+      els.searchMeta.textContent = `${this.searchIndex + 1}/${this.searchMatches.length}`;
+    }
+
+    replaceCurrent() {
+      const query = $('findInput').value, replacement = $('replaceInput').value;
+      if (!query) return;
+      const selected = els.editor.value.slice(els.editor.selectionStart, els.editor.selectionEnd);
+      if ((this.searchCaseSensitive ? selected === query : selected.toLowerCase() === query.toLowerCase())) this.insertText(replacement, els.editor.selectionStart, els.editor.selectionEnd);
+      this.find(1);
+    }
+
+    replaceAll() {
+      const query = $('findInput').value, replacement = $('replaceInput').value;
+      if (!query) return;
+      const source = els.editor.value;
+      const haystack = this.searchCaseSensitive ? source : source.toLowerCase();
+      const needle = this.searchCaseSensitive ? query : query.toLowerCase();
+      let index = 0, last = 0, count = 0;
+      const parts = [];
+      while ((index = haystack.indexOf(needle, index)) !== -1) {
+        const before = source[index-1], after = source[index+query.length];
+        const accepted = !this.searchWholeWord || (!Utils.isWordChar(before) && !Utils.isWordChar(after));
+        if (accepted) {
+          parts.push(source.slice(last,index), replacement);
+          last = index + query.length;
+          count++;
+        }
+        index += Math.max(1, needle.length);
+      }
+      if (count) {
+        parts.push(source.slice(last));
+        els.editor.value = parts.join('');
+        els.editor.dispatchEvent(new Event('input'));
+        this.showToast(`${count} ${count === 1 ? 'ocorrência substituída' : 'ocorrências substituídas'}.`, 'success');
+      }
+      this.find(1, true);
+    }
+
+    runDiagnostics() {
+      const issues = this.diagnostics.analyze(els.editor.value);
+      els.diagList.replaceChildren(...issues.map(issue => {
+        const row = document.createElement('div'); row.className = `drawer-item severity-${issue.severity}`; row.dataset.line = String(issue.line);
+        const text = document.createElement('span'); text.textContent = issue.message;
+        const meta = document.createElement('span'); meta.className = 'drawer-meta'; meta.textContent = `linha ${issue.line}`;
+        row.append(text, meta); return row;
+      }));
+    }
+
+    onDiagnosticClick(event) {
+      const row = event.target.closest('[data-line]'); if (!row) return;
+      const line = Number(row.dataset.line), lines = els.editor.value.split('\n');
+      let pos = 0; for (let i = 1; i < line; i++) pos += (lines[i-1]?.length || 0) + 1;
+      els.editor.focus(); els.editor.setSelectionRange(pos, pos + Math.min(lines[line-1]?.length || 0, 160)); this.updateMeta();
+    }
+
+    async refreshHistory() {
+      const items = await this.storage.listSnapshots();
+      if (!items.length) { const empty = document.createElement('div'); empty.className = 'drawer-empty'; empty.textContent = 'Ainda não há snapshots.'; els.historyList.replaceChildren(empty); return; }
+      els.historyList.replaceChildren(...items.map(item => {
+        const row = document.createElement('div'); row.className = 'drawer-item'; row.dataset.snapshotId = String(item.id);
+        const text = document.createElement('span'); text.textContent = `${item.name} · ${item.reason}`;
+        const meta = document.createElement('span'); meta.className = 'drawer-meta'; meta.textContent = Utils.formatDate(item.createdAt);
+        const button = document.createElement('button'); button.type = 'button'; button.dataset.restore = String(item.id); button.textContent = 'Restaurar';
+        row.append(text, meta, button); return row;
+      }));
+    }
+
+    async onHistoryClick(event) {
+      const button = event.target.closest('[data-restore]'); if (!button) return;
+      const snapshots = await this.storage.listSnapshots();
+      const item = snapshots.find(x => String(x.id) === button.dataset.restore); if (!item) return;
+      await this.createSnapshot('antes de restaurar snapshot');
+      this.fileHandle = null;
+      this.loadIntoEditor(item.content, item.name, {dirty:true});
+      await this.autosave();
+      this.closeDrawer('historyDrawer');
+      this.showToast('Snapshot restaurado.', 'success');
+    }
+
+    updateLiveButton() {
+      const button=$('liveBtn'), effective=this.livePreview&&!this.largeFileMode;
+      button.textContent=this.largeFileMode?'Live: pausado':`Live: ${this.livePreview?'ligado':'desligado'}`;
+      button.setAttribute('aria-pressed',String(this.livePreview));
+      button.title=this.largeFileMode?'Preview automático pausado no modo arquivo grande; use Atualizar ou F8.':'Ativar ou desativar o preview automático.';
+      button.classList.toggle('active-toggle',effective);
+    }
+
+    toggleLivePreview() {
+      this.livePreview=!this.livePreview; this.ui.livePreview=this.livePreview; this.updateLiveButton(); this.saveUISettings();
+      if (this.livePreview&&!this.largeFileMode) this.preview.render(els.editor.value);
+    }
+
+    setViewport(value) {
+      if (value === 'fluid') { els.previewStage.style.width = '100%'; els.previewStage.style.height = '100%'; return; }
+      const [width,height] = value.split('x').map(Number);
+      els.previewStage.style.width = `${Math.max(240,width)}px`;
+      els.previewStage.style.height = `${Math.max(240,height)}px`;
+    }
+
+    toggleFullscreenPreview() {
+      document.body.classList.toggle('fullscreen-preview');
+      const active = document.body.classList.contains('fullscreen-preview');
+      $('fullBtn').textContent = active ? 'Sair tela cheia' : 'Tela cheia';
+      $('fullBtn').setAttribute('aria-pressed', String(active));
+    }
+
+    updateProjectName(scheduleSave = true) {
+      const name = Utils.sanitizeFilename(els.projectName.value || this.documentState.name);
+      els.projectName.value = name;
+      if (name === this.documentState.name) return;
+      if (this.fileHandle && this.fileHandle.name && this.fileHandle.name !== name) this.fileHandle = null;
+      this.documentState.name = name;
+      this.setDirty(true);
+      if (scheduleSave) this.autosaveDebounced();
+    }
+
+    openGoto() {
+      this.openDrawer('gotoDrawer');
+      const current = Utils.lineAndColumn(els.editor.value, els.editor.selectionStart).line;
+      $('gotoInput').value = String(current);
+      $('gotoInput').focus();
+      $('gotoInput').select();
+    }
+
+    goToLine(value) {
+      const lines = els.editor.value.split('\n');
+      const line = Math.max(1, Math.min(lines.length, Math.trunc(Number(value) || 1)));
+      let pos = 0; for (let i=1;i<line;i++) pos += lines[i-1].length + 1;
+      els.editor.focus(); els.editor.setSelectionRange(pos, pos + (lines[line-1]?.length || 0));
+      this.updateMeta(); this.closeDrawer('gotoDrawer');
+    }
+
+    updateSearchOptionButtons() {
+      $('caseBtn').setAttribute('aria-pressed', String(this.searchCaseSensitive));
+      $('wordBtn').setAttribute('aria-pressed', String(this.searchWholeWord));
+      $('caseBtn').classList.toggle('active-toggle', this.searchCaseSensitive);
+      $('wordBtn').classList.toggle('active-toggle', this.searchWholeWord);
+    }
+
+    setEditorFontSize(size, persist = true) {
+      const next = Math.max(11, Math.min(22, Number(size) || 14));
+      this.ui.fontSize = next;
+      document.documentElement.style.setProperty('--editor-font-size', `${next}px`);
+      $('zoomLabel').textContent = `${Math.round(next/14*100)}%`;
+      if (persist) this.saveUISettings(); this.syncScroll();
+    }
+
+    changeEditorZoom(delta) { this.setEditorFontSize((this.ui.fontSize || 14) + Number(delta || 0)); }
+
+    toggleWrap() {
+      this.ui.wrap = !this.ui.wrap;
+      document.body.classList.toggle('word-wrap', this.ui.wrap);
+      $('wrapBtn').textContent = `Quebra: ${this.ui.wrap ? 'sim' : 'não'}`;
+      $('wrapBtn').setAttribute('aria-pressed', String(this.ui.wrap));
+      $('wrapBtn').classList.toggle('active-toggle', this.ui.wrap);
+      this.saveUISettings(); this.syncScroll();
+    }
+
+    toggleEditorFocus() {
+      const next = !document.body.classList.contains('focus-editor');
+      document.body.classList.toggle('focus-editor', next);
+      $('focusBtn').setAttribute('aria-pressed', String(next));
+      $('focusBtn').classList.toggle('active-toggle', next);
+      $('focusBtn').textContent = next ? 'Sair foco' : 'Foco';
+      if (next) els.editor.focus();
+    }
+
+    bindResizers() {
+      const root = document.documentElement;
+      const splitMove = event => {
+        const rect = document.querySelector('.workspace').getBoundingClientRect();
+        const percent = Math.max(25, Math.min(75, ((event.clientX - rect.left) / rect.width) * 100));
+        this.ui.split = Math.round(percent * 10) / 10; root.style.setProperty('--split', `${this.ui.split}%`); els.splitHandle.setAttribute('aria-valuenow', String(this.ui.split));
+      };
+      const stopSplit = () => { document.body.classList.remove('dragging-split'); window.removeEventListener('pointermove', splitMove); window.removeEventListener('pointerup', stopSplit); this.saveUISettings(); };
+      els.splitHandle.addEventListener('pointerdown', event => { if (matchMedia('(max-width:800px)').matches) return; event.preventDefault(); document.body.classList.add('dragging-split'); els.splitHandle.setPointerCapture?.(event.pointerId); window.addEventListener('pointermove', splitMove); window.addEventListener('pointerup', stopSplit); });
+      els.splitHandle.addEventListener('dblclick', () => { this.ui.split=50; root.style.setProperty('--split','50%'); els.splitHandle.setAttribute('aria-valuenow','50'); this.saveUISettings(); });
+      els.splitHandle.addEventListener('keydown', event => { if (!['ArrowLeft','ArrowRight','Home'].includes(event.key)) return; event.preventDefault(); this.ui.split = event.key==='Home' ? 50 : Math.max(25,Math.min(75,this.ui.split + (event.key==='ArrowRight'?2:-2))); root.style.setProperty('--split',`${this.ui.split}%`); els.splitHandle.setAttribute('aria-valuenow',String(this.ui.split)); this.saveUISettings(); });
+
+      const consoleMove = event => {
+        const area = document.querySelector('.preview-area').getBoundingClientRect();
+        const height = Math.max(90, Math.min(Math.max(90,area.height-120), area.bottom - event.clientY));
+        this.ui.consoleHeight = Math.round(height); root.style.setProperty('--console-height', `${this.ui.consoleHeight}px`); els.consoleHandle.setAttribute('aria-valuenow', String(this.ui.consoleHeight));
+      };
+      const stopConsole = () => { document.body.classList.remove('dragging-console'); window.removeEventListener('pointermove', consoleMove); window.removeEventListener('pointerup', stopConsole); this.saveUISettings(); };
+      els.consoleHandle.addEventListener('pointerdown', event => { event.preventDefault(); document.body.classList.add('dragging-console'); els.consoleHandle.setPointerCapture?.(event.pointerId); window.addEventListener('pointermove', consoleMove); window.addEventListener('pointerup', stopConsole); });
+      els.consoleHandle.addEventListener('dblclick', () => { this.ui.consoleHeight=165; root.style.setProperty('--console-height','165px'); els.consoleHandle.setAttribute('aria-valuenow','165'); this.saveUISettings(); });
+      els.consoleHandle.addEventListener('keydown', event => { if (!['ArrowUp','ArrowDown','Home'].includes(event.key)) return; event.preventDefault(); this.ui.consoleHeight = event.key==='Home' ? 165 : Math.max(90,Math.min(500,this.ui.consoleHeight + (event.key==='ArrowUp'?12:-12))); root.style.setProperty('--console-height',`${this.ui.consoleHeight}px`); els.consoleHandle.setAttribute('aria-valuenow',String(this.ui.consoleHeight)); this.saveUISettings(); });
+    }
+
+    bindFileDrop() {
+      let depth = 0;
+      window.addEventListener('dragenter', event => { if (![...(event.dataTransfer?.items || [])].some(item => item.kind==='file')) return; depth++; document.body.classList.add('drop-active'); });
+      window.addEventListener('dragover', event => { if ([...(event.dataTransfer?.items || [])].some(item => item.kind==='file')) event.preventDefault(); });
+      window.addEventListener('dragleave', () => { depth=Math.max(0,depth-1); if (!depth) document.body.classList.remove('drop-active'); });
+      window.addEventListener('drop', async event => {
+        depth=0; document.body.classList.remove('drop-active');
+        const file = event.dataTransfer?.files?.[0]; if (!file) return;
+        event.preventDefault(); await this.openFile(file);
+      });
+    }
+
+    restoreUISettings() {
+      let stored = null;
+      try { stored = Utils.safeJSONParse(localStorage.getItem('purehtml.ui.v1'), null); } catch { /* optional */ }
+      if (stored && typeof stored === 'object') this.ui = {...this.ui, ...stored};
+      this.ui.split = Math.max(25,Math.min(75,Number(this.ui.split)||50));
+      this.ui.consoleHeight = Math.max(90,Math.min(500,Number(this.ui.consoleHeight)||165));
+      this.ui.fontSize = Math.max(11,Math.min(22,Number(this.ui.fontSize)||14));
+      document.documentElement.style.setProperty('--split',`${this.ui.split}%`);
+      document.documentElement.style.setProperty('--console-height',`${this.ui.consoleHeight}px`);
+      els.splitHandle.setAttribute('aria-valuenow', String(this.ui.split));
+      els.consoleHandle.setAttribute('aria-valuenow', String(this.ui.consoleHeight));
+      this.setEditorFontSize(this.ui.fontSize, false);
+      document.body.classList.toggle('word-wrap',Boolean(this.ui.wrap));
+      $('wrapBtn').textContent=`Quebra: ${this.ui.wrap?'sim':'não'}`;
+      $('wrapBtn').setAttribute('aria-pressed',String(Boolean(this.ui.wrap)));
+      $('wrapBtn').classList.toggle('active-toggle',Boolean(this.ui.wrap));
+      $('viewport').value = ['fluid','390x844','768x1024','1024x768','1280x720'].includes(this.ui.viewport) ? this.ui.viewport : 'fluid';
+      this.setViewport($('viewport').value);
+      document.body.classList.toggle('console-hidden',Boolean(this.ui.consoleHidden));
+      $('consoleBtn').setAttribute('aria-pressed', String(!Boolean(this.ui.consoleHidden)));
+      this.livePreview = this.ui.livePreview !== false;
+      this.updateLiveButton();
+      this.updateSearchOptionButtons();
+    }
+
+    saveUISettings() {
+      this.ui.consoleHidden = document.body.classList.contains('console-hidden');
+      try { localStorage.setItem('purehtml.ui.v1', JSON.stringify(this.ui)); } catch { /* preferências são opcionais */ }
+    }
+
+    updateStorageStatus(mode = this.storage.mode) {
+      const labels = {indexedDB:'IndexedDB · autosave ativo', localStorage:'LocalStorage · modo de contingência', memory:'Memória temporária · exporte uma cópia'};
+      els.storageStatus.textContent = labels[mode] || mode;
+      els.storageStatus.title = this.storage.lastError ? `${labels[mode]} · ${this.storage.lastError.message}` : labels[mode];
+    }
+
+    updateNetworkStatus() {
+      if (location.protocol === 'file:') els.networkState.textContent = 'Modo portátil · sem dependência de rede';
+      else els.networkState.textContent = navigator.onLine ? 'Online · app offline-first' : 'Offline · app funcional';
+    }
+
+    async requestPersistentStorage() {
+      if (!navigator.storage?.persist) return;
+      try {
+        const persisted = await navigator.storage.persist();
+        if (persisted) els.storageStatus.textContent += ' · persistente';
+      } catch { /* degradação silenciosa */ }
+    }
+
+    async registerServiceWorker() {
+      if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+      try {
+        const registration = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
+        registration.update().catch(() => {});
+        if (registration.waiting) registration.waiting.postMessage({type:'SKIP_WAITING'});
+      } catch (error) {
+        this.showToast('Service Worker indisponível; autosave local continua funcionando normalmente.', 'error', 5000);
+      }
+    }
+
+    async requestOutboxFlush() {
+      if (!navigator.serviceWorker?.controller) return;
+      navigator.serviceWorker.controller.postMessage({type:'FLUSH_OUTBOX'});
+    }
+
+    showToast(message, type = '', duration = 3200) {
+      clearTimeout(this.toastTimer);
+      els.toast.textContent = message;
+      els.toast.className = `toast${type ? ` ${type}` : ''}`;
+      els.toast.hidden = false;
+      this.toastTimer = setTimeout(() => { els.toast.hidden = true; }, duration);
+    }
+  }
+
+  const app = new PureHTMLApp();
+  app.init().catch(error => {
+    document.body.classList.remove('syntax-ready');
+    els.readyState.textContent = '● Modo de segurança';
+    els.readyState.style.color = '#ff9292';
+    els.storageStatus.textContent = 'Falha de inicialização · editor em modo seguro';
+    if (!els.editor.value) els.editor.value = STARTER;
+    els.editor.style.color = '#e8edf2';
+    els.editor.style.webkitTextFillColor = '#e8edf2';
+    console.error('PureHTML init failure', error);
+  });
+})();
+
+</script>
+</body>
+</html>
